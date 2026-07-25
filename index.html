@@ -88,7 +88,7 @@
         .skin-card button.active-btn { background: #4a8a5a; }
         #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); z-index: 10; }
         #backToMenu:hover { background: #555; }
-        .game-wrapper { position: relative; display: none; }
+        .game-wrapper { position: relative; display: block; }
         .touch-controls {
             display: none !important;
             position: absolute;
@@ -134,7 +134,7 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v2.2</div>
+        <div class="version">v2.3</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -224,7 +224,7 @@
 
 <script>
 // ============================================================
-//  FIREBASE CONFIG (ПРОВЕРЬТЕ, ЧТО ВАШИ ДАННЫЕ ВСТАВЛЕНЫ)
+//  FIREBASE CONFIG
 // ============================================================
 const firebaseConfig = {
     apiKey: "AIzaSyC1yg9Up6LrfSt1VTHyBK_gvZ8058CSI6A",
@@ -237,12 +237,10 @@ const firebaseConfig = {
     measurementId: "G-4QP3LMZ9WV"
 };
 
-// Инициализация Firebase с обработкой ошибок
 try {
     firebase.initializeApp(firebaseConfig);
-    console.log('Firebase инициализирован');
 } catch (e) {
-    console.error('Ошибка Firebase:', e);
+    console.error('Firebase init error:', e);
 }
 const auth = firebase.auth();
 const db = firebase.database();
@@ -268,7 +266,7 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (без изменений)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
@@ -339,7 +337,6 @@ function generateLevels(count) {
 
 let LEVELS = generateLevels(TOTAL_LEVELS);
 if (LEVELS.length === 0) {
-    console.warn('Уровни не сгенерированы, повторная попытка');
     LEVELS = generateLevels(TOTAL_LEVELS);
 }
 
@@ -481,7 +478,7 @@ function loadGameFromFirebase() {
 }
 
 // ============================================================
-//  АУТЕНТИФИКАЦИЯ (С ОБРАБОТКОЙ ОШИБОК)
+//  АУТЕНТИФИКАЦИЯ
 // ============================================================
 function signInAnonymously() {
     auth.signInAnonymously()
@@ -491,11 +488,9 @@ function signInAnonymously() {
             userIdDisplay.textContent = gameData.userId;
             loadGameFromFirebase();
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: gameData.userId }));
-            console.log('Анонимный вход выполнен, UID:', currentUser.uid);
         })
         .catch(error => {
             console.error('Ошибка анонимного входа:', error);
-            // Fallback: используем локальный ID
             const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) {
                 try {
@@ -509,10 +504,11 @@ function signInAnonymously() {
             }
             userIdDisplay.textContent = gameData.userId;
             updateUI();
-            // Всё равно показываем меню даже без Firebase
+            // при ошибке всё равно показываем меню
             if (introActive) {
                 introActive = false;
                 menuEl.style.display = 'flex';
+                gameWrapper.style.display = 'none';
             }
         });
 }
@@ -795,7 +791,6 @@ function startLevel(index) {
     gameWrapper.style.display = 'block';
     gameOverEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'block';
-    // Показываем сенсорные кнопки только если включен мобильный режим
     if (useMobileLayout && touchControls) {
         touchControls.classList.add('active');
     } else {
@@ -1108,13 +1103,23 @@ function draw() {
 }
 
 // ============================================================
-//  ГЛАВНЫЙ ЦИКЛ И ВСПОМОГАТЕЛЬНЫЕ
+//  ГЛАВНЫЙ ЦИКЛ
 // ============================================================
 function gameLoop() {
     if (gameData.banned) { requestAnimationFrame(gameLoop); return; }
-    if (introActive) { drawIntro(); requestAnimationFrame(gameLoop); return; }
-    if (!gameRunning && !gameOverShown) { requestAnimationFrame(gameLoop); return; }
-    if (gameOverShown) { requestAnimationFrame(gameLoop); return; }
+    if (introActive) {
+        drawIntro();
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (!gameRunning && !gameOverShown) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (gameOverShown) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
     update();
     draw();
     requestAnimationFrame(gameLoop);
@@ -1216,7 +1221,7 @@ window.onload = function() {
     touchRight = document.getElementById('touchRight');
     touchJump = document.getElementById('touchJump');
 
-    // Скрываем кнопки по умолчанию
+    // Скрываем сенсорные кнопки
     if (touchControls) touchControls.classList.remove('active');
 
     const hasDeviceMode = loadDeviceMode();
@@ -1279,6 +1284,7 @@ window.onload = function() {
         setupTouchControls();
         deviceSelectEl.style.display = 'none';
         menuEl.style.display = 'flex';
+        gameWrapper.style.display = 'none';
         updateUI();
     });
     document.getElementById('devicePhone').addEventListener('click', () => {
@@ -1287,6 +1293,7 @@ window.onload = function() {
         setupTouchControls();
         deviceSelectEl.style.display = 'none';
         menuEl.style.display = 'flex';
+        gameWrapper.style.display = 'none';
         updateUI();
     });
 
@@ -1305,15 +1312,17 @@ window.onload = function() {
             gameOverShown = false;
             gameOverEl.style.display = 'none';
             document.getElementById('backToMenu').style.display = 'none';
+            if (touchControls) touchControls.classList.remove('active');
         }
     }
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
 
+    // Изначально: заставка видна, меню скрыто, gameWrapper виден
     introActive = true;
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
-    gameWrapper.style.display = 'none';
+    gameWrapper.style.display = 'block';   // показываем для заставки
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
     transferModal.style.display = 'none';
