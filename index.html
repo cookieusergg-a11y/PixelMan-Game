@@ -120,6 +120,9 @@
             position: relative;
             background: transparent;
         }
+        .game-wrapper.hidden {
+            display: none !important;
+        }
         .game-wrapper.mobile {
             display: flex;
             flex-direction: column;
@@ -173,7 +176,7 @@
 <div id="app">
     <!-- Меню -->
     <div class="menu" id="menu">
-        <div class="version">v3.9</div>
+        <div class="version">v4.0</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -499,6 +502,7 @@ function banAccount(reason) {
     gameOverShown = false;
     menuEl.style.display = 'none';
     touchControls.classList.remove('active');
+    gameWrapper.classList.add('hidden');
     document.body.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:#0a0a1a; color:#fff; font-family:'Press Start 2P', cursive; text-align:center; padding:20px;">
             <h1 style="color:#ff4444;">🚫 АККАУНТ ЗАБЛОКИРОВАН</h1>
@@ -670,7 +674,7 @@ function signInAnonymously() {
             if (introActive) {
                 introActive = false;
                 menuEl.style.display = 'flex';
-                gameWrapper.classList.remove('mobile', 'pc');
+                gameWrapper.classList.add('hidden');
                 touchControls.classList.remove('active');
             }
         });
@@ -954,7 +958,8 @@ function startLevel(index) {
     gameOverEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'block';
 
-    // Устанавливаем класс для game-wrapper
+    // Показываем game-wrapper и убираем hidden
+    gameWrapper.classList.remove('hidden');
     gameWrapper.classList.remove('mobile', 'pc');
     if (useMobileLayout) {
         gameWrapper.classList.add('mobile');
@@ -1295,6 +1300,7 @@ function gameLoop() {
 function showGameOver() {
     gameRunning = false;
     gameOverShown = true;
+    gameWrapper.classList.add('hidden');
     gameWrapper.classList.remove('mobile', 'pc');
     gameOverEl.style.display = 'flex';
     document.getElementById('backToMenu').style.display = 'none';
@@ -1359,6 +1365,7 @@ function setupTouchControls() {
 function showDeviceSelect() {
     deviceSelectEl.style.display = 'flex';
     menuEl.style.display = 'none';
+    gameWrapper.classList.add('hidden');
     gameWrapper.classList.remove('mobile', 'pc');
     gameOverEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
@@ -1470,6 +1477,7 @@ window.onload = function() {
         setupTouchControls();
         deviceSelectEl.style.display = 'none';
         menuEl.style.display = 'flex';
+        gameWrapper.classList.add('hidden');
         gameWrapper.classList.remove('mobile', 'pc');
         touchControls.classList.remove('active');
         updateUI();
@@ -1480,6 +1488,7 @@ window.onload = function() {
         setupTouchControls();
         deviceSelectEl.style.display = 'none';
         menuEl.style.display = 'flex';
+        gameWrapper.classList.add('hidden');
         gameWrapper.classList.remove('mobile', 'pc');
         touchControls.classList.remove('active');
         updateUI();
@@ -1488,11 +1497,13 @@ window.onload = function() {
     function exitIntro() {
         if (introActive) {
             introActive = false;
+            // Скрываем game-wrapper полностью
+            gameWrapper.classList.add('hidden');
+            gameWrapper.classList.remove('mobile', 'pc');
+            touchControls.classList.remove('active');
             if (loadDeviceMode()) {
                 menuEl.style.display = 'flex';
                 deviceSelectEl.style.display = 'none';
-                gameWrapper.classList.remove('mobile', 'pc');
-                touchControls.classList.remove('active');
                 updateUI();
             } else {
                 showDeviceSelect();
@@ -1506,10 +1517,11 @@ window.onload = function() {
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
 
-    // Начальное состояние: заставка видна, меню скрыто
+    // Начальное состояние: заставка видна, меню скрыто, game-wrapper виден (без hidden)
     introActive = true;
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
+    gameWrapper.classList.remove('hidden');
     gameWrapper.classList.remove('mobile', 'pc');
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
@@ -1526,6 +1538,7 @@ function goToMenu() {
     gameRunning = false;
     gameOverShown = false;
     if (afkActive) stopAfk();
+    gameWrapper.classList.add('hidden');
     gameWrapper.classList.remove('mobile', 'pc');
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
