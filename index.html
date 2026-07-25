@@ -9,7 +9,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* Стили без изменений (такие же как в v1.5) */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; touch-action: manipulation; }
         #app { background: #12122a; border-radius: 16px; padding: 16px; box-shadow: 0 0 40px #2a2a6a; position: relative; width: 100%; max-width: 820px; margin: 0 auto; }
@@ -103,9 +102,8 @@
 </head>
 <body>
 <div id="app">
-    <!-- Меню -->
     <div class="menu" id="menu">
-        <div class="version">v1.6</div>
+        <div class="version">v1.7</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -233,7 +231,7 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (С ИСПРАВЛЕННЫМ СПАВНОМ)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (стартовая платформа, монет меньше)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
@@ -243,18 +241,13 @@ function generateLevels(count) {
         const baseY = 440 - (i % 5) * 5 - Math.floor(i / 8) * 3;
         const platCount = 4 + (i % 5) + Math.floor(i / 6);
         const platforms = [];
-
-        // СТАРТОВАЯ ПЛАТФОРМА (под игроком)
         const startPlat = { x: 10, y: baseY, w: 70, h: 16 };
         platforms.push(startPlat);
-
         let cx = startPlat.x + startPlat.w;
         let cy = baseY;
         const maxX = 760;
         const minGap = 70;
         const maxGap = 130;
-
-        // Остальные платформы
         for (let j = 0; j < platCount; j++) {
             const w = 50 + Math.floor(r() * 30);
             const h = 16;
@@ -267,42 +260,36 @@ function generateLevels(count) {
             cx += w;
             cy = py;
         }
-
-        // Гарантируем минимум ещё 2 платформы
         while (platforms.length < 3) {
             const last = platforms[platforms.length - 1];
             const newX = last.x + last.w + 80;
             const newY = Math.min(440, Math.max(300, last.y + (Math.random() * 40 - 20)));
             platforms.push({ x: newX, y: newY, w: 60, h: 16 });
         }
-
-        // Монеты
         const coinPositions = [];
-        for (let j = 0; j < platforms.length; j++) {
-            if (j % 2 === 0 || r() > 0.5) {
+        // пропускаем стартовую (j=0)
+        for (let j = 1; j < platforms.length; j++) {
+            if (j % 3 === 0 || r() > 0.7) {
                 const p = platforms[j];
                 const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
                 const coinY = p.y - 15 - Math.random() * 10;
                 coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
             }
         }
-        for (let j = 0; j < Math.floor(platCount/2); j++) {
+        const extraCount = Math.floor(platCount / 3);
+        for (let j = 0; j < extraCount; j++) {
             const idx = Math.floor(r() * platforms.length);
+            if (idx === 0) continue;
             const p = platforms[idx];
             const coinX = p.x + 10 + r() * (p.w - 20);
             const coinY = p.y - 20 - r() * 15;
             coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
         }
-
-        // Игрок – на стартовой платформе
         const playerX = startPlat.x + 10;
         const playerY = startPlat.y - PLAYER_H;
-
-        // Дверь – после последней платформы
         const lastPlat = platforms[platforms.length - 1];
         let doorX = Math.min(lastPlat.x + lastPlat.w + 60, 780);
         if (doorX < 700) doorX = 700;
-
         levels.push({
             platforms: platforms,
             coins: coinPositions,
@@ -335,36 +322,17 @@ let gameData = {
     afkLevel: 0,
     banned: false
 };
-
-let currentLevel = 0;
-let gameRunning = false;
-let gameOverShown = false;
+let currentLevel = 0, gameRunning = false, gameOverShown = false;
 let player = { x:0, y:0, vx:0, vy:0, onGround:false, walkTime:0 };
-let platforms = [];
-let coins = [];
-let doorX = 0;
-const DOOR_W = 30;
-const DOOR_H = 500;
+let platforms = [], coins = [], doorX = 0;
+const DOOR_W = 30, DOOR_H = 500;
 let keys = { left:false, right:false, jump:false };
-let canvas, ctx;
-let menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal;
+let canvas, ctx, menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal;
 let levelGrid, coinDisplay, userIdDisplay, syncStatus;
-let afkActive = false;
-let afkInterval = null;
-let afkCountdown = 120;
-let afkTimerElement;
-let afkBtnElement;
-let toastEl;
-
-let introActive = true;
-let introBlocks = [];
-let introSpeed = 3;
-let introBaseY = 420;
-let introJumpOffset = 0;
-let introJumpActive = false;
-let introJumpTimer = 0;
-let introWalkTime = 0;
-
+let afkActive = false, afkInterval = null, afkCountdown = 120;
+let afkTimerElement, afkBtnElement, toastEl;
+let introActive = true, introBlocks = [], introSpeed = 3, introBaseY = 420;
+let introJumpOffset = 0, introJumpActive = false, introJumpTimer = 0, introWalkTime = 0;
 let touchControls, touchLeft, touchRight, touchJump;
 let coinCollectCooldown = false;
 
@@ -372,7 +340,6 @@ let coinCollectCooldown = false;
 //  АНТИ-ЧИТ
 // ============================================================
 let coinHistory = [];
-
 function checkCoinRate(amount) {
     coinHistory.push({ amount, time: Date.now() });
     coinHistory = coinHistory.filter(entry => Date.now() - entry.time < 5000);
@@ -383,7 +350,6 @@ function checkCoinRate(amount) {
     }
     return false;
 }
-
 function banAccount(reason) {
     if (!currentUser) return;
     db.ref('users/' + currentUser.uid + '/banned').set(true);
@@ -414,35 +380,20 @@ function getTotalMultiplier() {
     const bonus = gameData.multLevel * 0.2;
     return base + bonus;
 }
-
 function getAfkCooldown() {
     let cooldown = 120 - gameData.afkLevel * 10;
     if (cooldown < 20) cooldown = 20;
     return cooldown;
 }
-
-function getMultUpgradeCost() {
-    return 100 * (gameData.multLevel + 1);
-}
-
-function getAfkUpgradeCost() {
-    return 100 * (gameData.afkLevel + 1);
-}
-
-function canBuyMult() {
-    return gameData.multLevel < MAX_MULT_LEVEL && gameData.coins >= getMultUpgradeCost();
-}
-
-function canBuyAfk() {
-    return gameData.afkLevel < MAX_AFK_LEVEL && gameData.coins >= getAfkUpgradeCost();
-}
+function getMultUpgradeCost() { return 100 * (gameData.multLevel + 1); }
+function getAfkUpgradeCost() { return 100 * (gameData.afkLevel + 1); }
+function canBuyMult() { return gameData.multLevel < MAX_MULT_LEVEL && gameData.coins >= getMultUpgradeCost(); }
+function canBuyAfk() { return gameData.afkLevel < MAX_AFK_LEVEL && gameData.coins >= getAfkUpgradeCost(); }
 
 // ============================================================
-//  ID
+//  ГЕНЕРАЦИЯ ID
 // ============================================================
-function generateUserId() {
-    return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-}
+function generateUserId() { return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6); }
 
 // ============================================================
 //  СОХРАНЕНИЕ / ЗАГРУЗКА
@@ -461,7 +412,6 @@ function saveGameToFirebase() {
         banned: gameData.banned
     }).catch(err => console.warn('Ошибка сохранения:', err));
 }
-
 function loadGameFromFirebase() {
     if (!currentUser) return;
     const ref = db.ref('users/' + currentUser.uid);
@@ -534,14 +484,12 @@ function updateUI() {
     if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
     buildMenu();
 }
-
 function setSyncStatus(ok) {
     if (syncStatus) {
         syncStatus.textContent = ok ? '● синхр.' : '⚠ офлайн';
         syncStatus.style.color = ok ? '#8f8' : '#f88';
     }
 }
-
 function buildMenu() {
     if (gameData.banned) return;
     levelGrid.innerHTML = '';
@@ -583,31 +531,25 @@ function renderShop() {
         const card = document.createElement('div');
         card.className = 'skin-card';
         if (gameData.activeSkin === skin.id) card.classList.add('active');
-
         const preview = document.createElement('div');
         preview.className = 'color-preview';
         preview.style.background = skin.color;
         card.appendChild(preview);
-
         const name = document.createElement('div');
         name.className = 'skin-name';
         name.textContent = skin.name;
         card.appendChild(name);
-
         const price = document.createElement('div');
         price.className = 'skin-price';
         price.textContent = skin.price === 0 ? 'Бесплатно' : skin.price + ' 🪙';
         card.appendChild(price);
-
         const mult = document.createElement('div');
         mult.className = 'skin-multiplier';
         mult.textContent = 'x' + skin.multiplier;
         card.appendChild(mult);
-
         const btn = document.createElement('button');
         const owned = gameData.ownedSkins.includes(skin.id);
         const isActive = gameData.activeSkin === skin.id;
-
         if (isActive) {
             btn.textContent = '✅ Активен';
             btn.disabled = true;
@@ -658,7 +600,6 @@ function updateUpgradeUI() {
     document.getElementById('buyMultBtn').disabled = !canBuyMult();
     document.getElementById('buyAfkBtn').disabled = !canBuyAfk();
 }
-
 function buyMultUpgrade() {
     if (gameData.banned) return;
     if (!canBuyMult()) return;
@@ -670,7 +611,6 @@ function buyMultUpgrade() {
     updateUpgradeUI();
     showToast('Множитель увеличен!');
 }
-
 function buyAfkUpgrade() {
     if (gameData.banned) return;
     if (!canBuyAfk()) return;
@@ -680,10 +620,7 @@ function buyAfkUpgrade() {
     saveGameToFirebase();
     updateUI();
     updateUpgradeUI();
-    if (afkActive) {
-        stopAfk();
-        startAfk();
-    }
+    if (afkActive) { stopAfk(); startAfk(); }
     showToast('AFK ускорен!');
 }
 
@@ -709,7 +646,6 @@ function transferCoins(targetId, amount) {
         showToast('Недостаточно монет');
         return;
     }
-
     db.ref('users/' + targetId).once('value')
         .then(snapshot => {
             if (!snapshot.exists()) {
@@ -748,8 +684,7 @@ function transferCoins(targetId, amount) {
 //  AFK
 // ============================================================
 function startAfk() {
-    if (gameData.banned) return;
-    if (afkActive) return;
+    if (gameData.banned || afkActive) return;
     afkActive = true;
     afkBtnElement.textContent = '⏳ AFK фарм ВКЛ';
     afkBtnElement.classList.add('active');
@@ -772,7 +707,6 @@ function startAfk() {
         }
     }, 1000);
 }
-
 function stopAfk() {
     if (!afkActive) return;
     afkActive = false;
@@ -785,31 +719,20 @@ function stopAfk() {
     afkCountdown = getAfkCooldown();
     afkTimerElement.textContent = '0с';
 }
-
-function toggleAfk() {
-    if (afkActive) stopAfk();
-    else startAfk();
-}
-
-function updateAfkTimerDisplay() {
-    afkTimerElement.textContent = afkCountdown + 'с';
-}
+function toggleAfk() { if (afkActive) stopAfk(); else startAfk(); }
+function updateAfkTimerDisplay() { afkTimerElement.textContent = afkCountdown + 'с'; }
 
 // ============================================================
 //  ИГРОВАЯ ЛОГИКА
 // ============================================================
 function startLevel(index) {
-    if (gameData.banned) return;
-    if (index < 0 || index >= TOTAL_LEVELS) return;
+    if (gameData.banned || index < 0 || index >= TOTAL_LEVELS) return;
     currentLevel = index;
     const level = LEVELS[index];
     if (!level) {
         console.error('Уровень не найден, перегенерируем');
         LEVELS = generateLevels(TOTAL_LEVELS);
-        if (LEVELS.length <= index) {
-            showToast('Ошибка загрузки уровня');
-            return;
-        }
+        if (LEVELS.length <= index) { showToast('Ошибка загрузки уровня'); return; }
         startLevel(index);
         return;
     }
@@ -820,12 +743,8 @@ function startLevel(index) {
     player.vx = 0; player.vy = 0; player.onGround = false;
     player.walkTime = 0;
     coins = level.coins.map(c => ({x:c.x, y:c.y, radius:10, collected:false}));
-
     coinCollectCooldown = false;
-    setTimeout(() => {
-        coinCollectCooldown = true;
-    }, 500);
-
+    setTimeout(() => { coinCollectCooldown = true; }, 500);
     gameRunning = true;
     gameOverShown = false;
     menuEl.style.display = 'none';
@@ -837,28 +756,22 @@ function startLevel(index) {
     if (!window._loopStarted) { window._loopStarted = true; requestAnimationFrame(gameLoop); }
     canvas.focus();
 }
-
 function update() {
     if (!gameRunning || gameOverShown || gameData.banned) return;
-
     if (keys.left) player.vx = -MOVE_SPEED;
     else if (keys.right) player.vx = MOVE_SPEED;
     else player.vx *= 0.85;
-
     if (keys.jump && player.onGround) {
         player.vy = JUMP_FORCE;
         player.onGround = false;
     }
-
     player.vy += GRAVITY;
     if (player.vy > 15) player.vy = 15;
-
     if (player.onGround && Math.abs(player.vx) > 0.5) {
         player.walkTime += 0.15;
     } else if (player.onGround) {
         player.walkTime = 0;
     }
-
     player.x += player.vx;
     for (let p of platforms) {
         if (player.x < p.x + p.w && player.x + PLAYER_W > p.x &&
@@ -868,7 +781,6 @@ function update() {
             player.vx = 0;
         }
     }
-
     player.y += player.vy;
     player.onGround = false;
     for (let p of platforms) {
@@ -884,7 +796,6 @@ function update() {
             }
         }
     }
-
     const mult = getTotalMultiplier();
     if (coinCollectCooldown) {
         for (let c of coins) {
@@ -903,9 +814,7 @@ function update() {
             }
         }
     }
-
     if (player.y > 600) { restartLevel(); return; }
-
     if (player.x + PLAYER_W > doorX && player.x < doorX + DOOR_W &&
         player.y + PLAYER_H > 0 && player.y < 500) {
         const levelNum = currentLevel + 1;
@@ -929,23 +838,18 @@ function update() {
         return;
     }
 }
-
-function restartLevel() {
-    startLevel(currentLevel);
-}
+function restartLevel() { startLevel(currentLevel); }
 
 // ============================================================
 //  ОТРИСОВКА
 // ============================================================
 function drawIntro() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     grad.addColorStop(0, '#0a0a2a');
     grad.addColorStop(1, '#1a1a3a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = '#ffffff';
     for (let i = 0; i < 80; i++) {
         const sx = (i * 37) % canvas.width;
@@ -955,7 +859,6 @@ function drawIntro() {
         ctx.fillRect(sx, sy, size, size);
     }
     ctx.globalAlpha = 1.0;
-
     if (introBlocks.length === 0) {
         for (let i = 0; i < 8; i++) {
             const x = 100 + i * 120 + Math.random() * 40;
@@ -964,10 +867,7 @@ function drawIntro() {
             introBlocks.push({ x, y, w, h:16 });
         }
     }
-
-    for (let b of introBlocks) {
-        b.x -= introSpeed;
-    }
+    for (let b of introBlocks) { b.x -= introSpeed; }
     introBlocks = introBlocks.filter(b => b.x + b.w > -20);
     const last = introBlocks[introBlocks.length-1];
     if (last && last.x + last.w < canvas.width - 100) {
@@ -979,7 +879,6 @@ function drawIntro() {
     } else if (introBlocks.length === 0) {
         introBlocks.push({ x: canvas.width, y: introBaseY - 20, w: 60, h:16 });
     }
-
     ctx.fillStyle = '#6a7a9a';
     for (let b of introBlocks) {
         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -987,7 +886,6 @@ function drawIntro() {
         ctx.fillRect(b.x+2, b.y-2, b.w-4, 4);
         ctx.fillStyle = '#6a7a9a';
     }
-
     introJumpTimer += 1/60;
     if (!introJumpActive && introJumpTimer > 1.5 + Math.random() * 1.0) {
         introJumpActive = true;
@@ -1002,31 +900,24 @@ function drawIntro() {
             introJumpTimer = 0;
         }
     }
-
     introWalkTime += 0.15;
-
     const px = canvas.width/2 - PLAYER_W/2;
     const py = introBaseY - PLAYER_H + introJumpOffset;
-
     const skinColor = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
     const clothColor = skinColor.color;
     const headColor = '#f5cba7';
     const legColor = '#e6b88a';
-
     const headX = px + 6, headY = py, headW = 12, headH = 10;
     const bodyX = px + 2, bodyY = py + 10, bodyW = 20, bodyH = 12;
     const shortsX = px + 2, shortsY = py + 22, shortsW = 20, shortsH = 8;
     const legW = 6, legH = 10;
-
     ctx.fillStyle = headColor;
     ctx.fillRect(headX, headY, headW, headH);
-
     ctx.fillStyle = clothColor;
     ctx.fillRect(headX - 2, headY - 4, headW + 4, 6);
     ctx.fillRect(headX - 4, headY - 2, 6, 3);
     ctx.fillRect(headX + headW - 2, headY - 2, 6, 3);
     ctx.fillRect(headX + 2, headY - 6, 8, 3);
-
     ctx.fillStyle = clothColor;
     ctx.fillRect(bodyX, bodyY, bodyW, bodyH);
     const darken = (col) => {
@@ -1040,10 +931,8 @@ function drawIntro() {
     };
     ctx.fillStyle = darken(clothColor);
     ctx.fillRect(shortsX, shortsY, shortsW, shortsH);
-
     const legYBase = shortsY + shortsH;
     const isJumping = introJumpActive;
-
     if (isJumping) {
         ctx.fillStyle = legColor;
         ctx.fillRect(px + 4, legYBase, legW, legH);
@@ -1058,7 +947,6 @@ function drawIntro() {
         const rightOffsetY = (phase < 0) ? -2 : 2;
         ctx.fillRect(px + rightOffsetX, legYBase + rightOffsetY, legW, legH);
     }
-
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold ' + Math.min(64, canvas.width/12) + 'px "Press Start 2P", cursive';
@@ -1073,17 +961,14 @@ function drawIntro() {
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
     ctx.strokeText('PixelMan', canvas.width/2, canvas.height*0.32);
-
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = Math.min(14, canvas.width/40) + 'px "Press Start 2P", cursive';
     ctx.fillText('Кликни в любую точку', canvas.width/2, canvas.height*0.92);
 }
-
 function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = '#1a1a3a';
     ctx.fillRect(0,0,canvas.width,canvas.height);
-
     ctx.fillStyle = '#6a7a9a';
     for (let p of platforms) {
         ctx.fillRect(p.x, p.y, p.w, p.h);
@@ -1091,7 +976,6 @@ function draw() {
         ctx.fillRect(p.x+2, p.y-2, p.w-4, 4);
         ctx.fillStyle = '#6a7a9a';
     }
-
     for (let c of coins) {
         if (!c.collected) {
             ctx.beginPath();
@@ -1108,7 +992,6 @@ function draw() {
             ctx.fill();
         }
     }
-
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(doorX, 0, DOOR_W, canvas.height);
     const letters = ['В', 'Ы', 'Х', 'О', 'Д'];
@@ -1122,28 +1005,23 @@ function draw() {
     for (let i = 0; i < letters.length; i++) {
         ctx.fillText(letters[i], centerX, startY + i*stepY);
     }
-
     const px = player.x;
     const py = player.y;
     const skinColor = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
     const clothColor = skinColor.color;
     const headColor = '#f5cba7';
     const legColor = '#e6b88a';
-
     const headX = px + 6, headY = py, headW = 12, headH = 10;
     const bodyX = px + 2, bodyY = py + 10, bodyW = 20, bodyH = 12;
     const shortsX = px + 2, shortsY = py + 22, shortsW = 20, shortsH = 8;
     const legW = 6, legH = 10;
-
     ctx.fillStyle = headColor;
     ctx.fillRect(headX, headY, headW, headH);
-
     ctx.fillStyle = clothColor;
     ctx.fillRect(headX - 2, headY - 4, headW + 4, 6);
     ctx.fillRect(headX - 4, headY - 2, 6, 3);
     ctx.fillRect(headX + headW - 2, headY - 2, 6, 3);
     ctx.fillRect(headX + 2, headY - 6, 8, 3);
-
     ctx.fillStyle = clothColor;
     ctx.fillRect(bodyX, bodyY, bodyW, bodyH);
     const darken2 = (col) => {
@@ -1157,11 +1035,9 @@ function draw() {
     };
     ctx.fillStyle = darken2(clothColor);
     ctx.fillRect(shortsX, shortsY, shortsW, shortsH);
-
     const legYBase = shortsY + shortsH;
     const isMoving = Math.abs(player.vx) > 0.5 && player.onGround;
     const isJumping = !player.onGround;
-
     if (isJumping) {
         ctx.fillStyle = legColor;
         ctx.fillRect(px + 4, legYBase, legW, legH);
@@ -1183,31 +1059,17 @@ function draw() {
 }
 
 // ============================================================
-//  ГЛАВНЫЙ ЦИКЛ
+//  ГЛАВНЫЙ ЦИКЛ И ВСПОМОГАТЕЛЬНЫЕ
 // ============================================================
 function gameLoop() {
-    if (gameData.banned) {
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-    if (introActive) {
-        drawIntro();
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-    if (!gameRunning && !gameOverShown) {
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-    if (gameOverShown) {
-        requestAnimationFrame(gameLoop);
-        return;
-    }
+    if (gameData.banned) { requestAnimationFrame(gameLoop); return; }
+    if (introActive) { drawIntro(); requestAnimationFrame(gameLoop); return; }
+    if (!gameRunning && !gameOverShown) { requestAnimationFrame(gameLoop); return; }
+    if (gameOverShown) { requestAnimationFrame(gameLoop); return; }
     update();
     draw();
     requestAnimationFrame(gameLoop);
 }
-
 function showGameOver() {
     gameRunning = false;
     gameOverShown = true;
@@ -1217,7 +1079,6 @@ function showGameOver() {
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
 }
-
 function showToast(text) {
     toastEl.textContent = text;
     toastEl.classList.add('show');
@@ -1250,55 +1111,29 @@ window.addEventListener('keyup', handleKeyUp);
 //  СЕНСОРНЫЕ КНОПКИ
 // ============================================================
 let useMobileLayout = false;
-
 function loadDeviceMode() {
     const saved = localStorage.getItem('deviceMode');
-    if (saved === 'phone') {
-        useMobileLayout = true;
-    } else if (saved === 'pc') {
-        useMobileLayout = false;
-    } else {
-        return false;
-    }
+    if (saved === 'phone') { useMobileLayout = true; }
+    else if (saved === 'pc') { useMobileLayout = false; }
+    else { return false; }
     return true;
 }
-
-function saveDeviceMode(mode) {
-    localStorage.setItem('deviceMode', mode);
-}
-
+function saveDeviceMode(mode) { localStorage.setItem('deviceMode', mode); }
 function setupTouchControls() {
-    if (!useMobileLayout) {
-        touchControls.style.display = 'none';
-        return;
-    }
+    if (!useMobileLayout) { touchControls.style.display = 'none'; return; }
     touchControls.style.display = 'flex';
-
     function addTouchListeners(btn, keyOn, keyOff) {
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            keys[keyOn] = true;
-        });
-        btn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            keys[keyOn] = false;
-            if (keyOff) keys[keyOff] = false;
-        });
-        btn.addEventListener('touchcancel', (e) => {
-            e.preventDefault();
-            keys[keyOn] = false;
-            if (keyOff) keys[keyOff] = false;
-        });
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyOn] = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyOn] = false; if (keyOff) keys[keyOff] = false; });
+        btn.addEventListener('touchcancel', (e) => { e.preventDefault(); keys[keyOn] = false; if (keyOff) keys[keyOff] = false; });
         btn.addEventListener('mousedown', () => { keys[keyOn] = true; });
         btn.addEventListener('mouseup', () => { keys[keyOn] = false; if (keyOff) keys[keyOff] = false; });
         btn.addEventListener('mouseleave', () => { keys[keyOn] = false; if (keyOff) keys[keyOff] = false; });
     }
-
     addTouchListeners(touchLeft, 'left');
     addTouchListeners(touchRight, 'right');
     addTouchListeners(touchJump, 'jump');
 }
-
 function showDeviceSelect() {
     deviceSelectEl.style.display = 'flex';
     menuEl.style.display = 'none';
@@ -1327,7 +1162,6 @@ window.onload = function() {
     toastEl = document.getElementById('toast');
     afkBtnElement = document.getElementById('afkBtn');
     afkTimerElement = document.getElementById('afkTimer');
-
     touchControls = document.getElementById('touchControls');
     touchLeft = document.getElementById('touchLeft');
     touchRight = document.getElementById('touchRight');
@@ -1335,7 +1169,6 @@ window.onload = function() {
 
     const hasDeviceMode = loadDeviceMode();
     setupTouchControls();
-
     signInAnonymously();
 
     document.getElementById('backToMenu').addEventListener('click', goToMenu);
