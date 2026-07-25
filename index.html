@@ -9,13 +9,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
+        /* все стили без изменений (как в предыдущем коде) */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body { 
-            background: #0a0a1a; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
+        body {
+            background: #0a0a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             font-family: 'Segoe UI', Arial, sans-serif;
             touch-action: manipulation;
         }
@@ -86,8 +87,8 @@
             max-width: 420px;
         }
         .level-btn {
-            padding: 12px 0;
-            font-size: clamp(12px, 2vw, 18px);
+            padding: 8px 0;
+            font-size: clamp(10px, 1.8vw, 16px);
             font-weight: bold;
             border: none;
             border-radius: 8px;
@@ -232,6 +233,52 @@
         }
         .upgrade-item button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .upgrade-item button:hover:not(:disabled) { background: #4a9ed5; }
+        #deviceSelect {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            min-height: 300px;
+        }
+        #deviceSelect h2 {
+            font-family: 'Press Start 2P', cursive;
+            color: #fff;
+            font-size: clamp(18px, 4vw, 32px);
+            text-shadow: 0 0 20px #5af;
+            text-align: center;
+        }
+        #deviceSelect .device-buttons {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #deviceSelect .device-buttons button {
+            padding: 20px 40px;
+            font-size: clamp(18px, 3vw, 28px);
+            border: none;
+            border-radius: 20px;
+            background: #2a5a8a;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 20px rgba(42, 90, 138, 0.5);
+            min-width: 150px;
+        }
+        #deviceSelect .device-buttons button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(42, 90, 138, 0.9);
+        }
+        #deviceSelect .device-buttons button.phone-btn {
+            background: #2a8a5a;
+            box-shadow: 0 0 20px rgba(42, 138, 90, 0.5);
+        }
+        #deviceSelect .device-buttons button.phone-btn:hover {
+            box-shadow: 0 0 40px rgba(42, 138, 90, 0.9);
+        }
         #gameOver {
             display: none;
             flex-direction: column;
@@ -309,23 +356,24 @@
             right: 0;
             padding: 0 10px;
             z-index: 5;
-            justify-content: space-between;
+            justify-content: center;
             pointer-events: none;
+            gap: 30px;
         }
         .touch-controls .left-right {
             display: flex;
-            gap: 20px;
+            gap: 25px;
             pointer-events: auto;
+            margin-right: auto;
         }
-        .touch-controls .left-right button,
-        .touch-controls .jump-btn {
-            width: 60px;
-            height: 60px;
+        .touch-controls .left-right button {
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.2);
             color: #fff;
-            font-size: 24px;
+            font-size: 28px;
             backdrop-filter: blur(4px);
             touch-action: manipulation;
             cursor: pointer;
@@ -335,28 +383,46 @@
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
-        .touch-controls .left-right button:active,
-        .touch-controls .jump-btn:active {
-            background: rgba(255,255,255,0.35);
+        .touch-controls .left-right button:active {
+            background: rgba(255,255,255,0.5);
         }
         .touch-controls .jump-btn {
-            width: 80px;
-            height: 80px;
-            background: rgba(255,200,50,0.25);
-            border-color: rgba(255,200,50,0.5);
-            font-size: 28px;
-            margin-right: 10px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 4px solid #ffd700;
+            background: rgba(255,215,0,0.35);
+            color: #fff;
+            font-size: 36px;
+            font-weight: bold;
+            backdrop-filter: blur(4px);
+            touch-action: manipulation;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 0 30px rgba(255,215,0,0.6);
+            text-shadow: 0 0 20px #ffd700;
+            pointer-events: auto;
+            margin-left: -20px;
+        }
+        .touch-controls .jump-btn:active {
+            background: rgba(255,215,0,0.7);
+            transform: scale(0.95);
         }
         @media (max-width: 600px) {
             .touch-controls .left-right button {
-                width: 50px;
-                height: 50px;
-                font-size: 20px;
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
             }
             .touch-controls .jump-btn {
-                width: 65px;
-                height: 65px;
-                font-size: 22px;
+                width: 80px;
+                height: 80px;
+                font-size: 30px;
+                margin-left: -10px;
             }
         }
         .toast {
@@ -377,6 +443,33 @@
             font-family: 'Press Start 2P', cursive;
         }
         .toast.show { opacity: 1; }
+
+        /* Экран бана */
+        #banScreen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            color: #ff4444;
+            width: 100%;
+            aspect-ratio: 8/5;
+            border-radius: 10px;
+            text-align: center;
+            padding: 20px;
+        }
+        #banScreen h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(24px, 6vw, 48px);
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px #ff0000;
+        }
+        #banScreen p {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(14px, 2.5vw, 22px);
+            color: #ff8888;
+            max-width: 80%;
+        }
     </style>
 </head>
 <body>
@@ -403,14 +496,20 @@
         </div>
     </div>
 
-    <!-- Магазин -->
+    <div id="deviceSelect">
+        <h2>Выберите устройство</h2>
+        <div class="device-buttons">
+            <button id="devicePc">💻 ПК</button>
+            <button id="devicePhone" class="phone-btn">📱 Телефон</button>
+        </div>
+    </div>
+
     <div class="shop" id="shop">
         <h2>🏪 Магазин скинов</h2>
         <div class="shop-grid" id="skinGrid"></div>
         <button class="close-shop" id="closeShop">Закрыть</button>
     </div>
 
-    <!-- Модалка улучшений -->
     <div class="modal" id="upgradeModal">
         <div class="modal-content">
             <h2>⬆ Улучшения</h2>
@@ -430,7 +529,6 @@
         </div>
     </div>
 
-    <!-- Модалка передачи -->
     <div class="modal" id="transferModal">
         <div class="modal-content">
             <h2>📤 Передача монет</h2>
@@ -445,7 +543,6 @@
         </div>
     </div>
 
-    <!-- Игровой контейнер -->
     <div class="game-wrapper" id="gameWrapper">
         <canvas id="gameCanvas" width="800" height="500"></canvas>
         <button id="backToMenu">← Меню</button>
@@ -458,20 +555,49 @@
         </div>
     </div>
 
-    <!-- Финальный экран -->
     <div id="gameOver">
         <h2>Игра Окончена..</h2>
         <p>может быть..</p>
         <button id="exitBtn">Выйти</button>
+    </div>
+
+    <!-- Экран бана -->
+    <div id="banScreen">
+        <h1>⛔ ДОСТУП ЗАБЛОКИРОВАН</h1>
+        <p>Ваш аккаунт был автоматически забанен за подозрительную активность (читерство/эксплойты).<br>Обратитесь к администратору, если считаете это ошибкой.</p>
     </div>
 </div>
 <div id="toast" class="toast"></div>
 
 <script>
 // ============================================================
-//  ВЫБОР РЕЖИМА ОПТИМИЗАЦИИ
+//  НАСТРОЙКИ
 // ============================================================
-const USE_MOBILE_LAYOUT = true;   // true – сенсорные кнопки, false – только клавиатура (ПК)
+const TOTAL_LEVELS = 50;
+const COIN_RATE_LIMIT = 1000; // макс монет за 5 секунд
+const RATE_WINDOW = 5000; // 5 секунд
+const MIN_LOGIN_INTERVAL = 2000; // мин. 2 секунды между запусками
+
+// ============================================================
+//  ВЫБОР УСТРОЙСТВА
+// ============================================================
+let useMobileLayout = false;
+
+function loadDeviceMode() {
+    const saved = localStorage.getItem('deviceMode');
+    if (saved === 'phone') {
+        useMobileLayout = true;
+    } else if (saved === 'pc') {
+        useMobileLayout = false;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+function saveDeviceMode(mode) {
+    localStorage.setItem('deviceMode', mode);
+}
 
 // ============================================================
 //  FIREBASE CONFIG
@@ -494,17 +620,14 @@ const db = firebase.database();
 // ============================================================
 //  КОНСТАНТЫ
 // ============================================================
-const TOTAL_LEVELS = 10;
 const STORAGE_KEY = 'pixelman_data';
 const GRAVITY = 0.5;
 const JUMP_FORCE = -9.0;
 const MOVE_SPEED = 3.2;
 const PLAYER_W = 24, PLAYER_H = 28;
-const COIN_REWARDS = [1,3,5,7,9,11,13,15,17,20];
 const MAX_MULT_LEVEL = 10;
 const MAX_AFK_LEVEL = 10;
 
-// Скины с новыми ценами и множителями
 const SKINS = [
     { id:0, name:'Белая', color:'#ffffff', price:0, multiplier:1 },
     { id:1, name:'Красная', color:'#c0392b', price:80, multiplier:1.5 },
@@ -514,42 +637,83 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ДАННЫЕ УРОВНЕЙ (без изменений)
+//  ГЕНЕРАЦИЯ 50 УРОВНЕЙ (код без изменений)
 // ============================================================
-const LEVELS = [];
-function makeLevel(platforms, coins, playerX, playerY, doorX) {
-    return { platforms, coins, playerX, playerY, doorX };
+function generateLevels(count) {
+    const levels = [];
+    function seededRandom(seed) {
+        let s = seed;
+        return function() {
+            s = (s * 9301 + 49297) % 233280;
+            return s / 233280;
+        };
+    }
+
+    for (let i = 0; i < count; i++) {
+        const rng = seededRandom(i * 137 + 42);
+        const baseY = 440 - (i % 5) * 5 - Math.floor(i / 8) * 3;
+        const platCount = 4 + (i % 5) + Math.floor(i / 6);
+        const platforms = [];
+        let cx = 30;
+        let cy = baseY;
+        const maxX = 760;
+        const minGap = 70;
+        const maxGap = 130;
+
+        for (let j = 0; j < platCount; j++) {
+            const w = 50 + Math.floor(rng() * 30);
+            const h = 16;
+            const yOffset = Math.floor(rng() * 40 - 20);
+            const py = Math.min(440, Math.max(300, cy + yOffset));
+            const gap = minGap + Math.floor(rng() * (maxGap - minGap));
+            cx += gap;
+            if (cx + w > maxX) break;
+            platforms.push({ x: cx, y: py, w, h });
+            cx += w;
+            cy = py;
+        }
+        while (platforms.length < 3) {
+            const last = platforms[platforms.length - 1] || { x: 30, y: baseY, w: 50 };
+            const newX = last.x + last.w + 80;
+            const newY = Math.min(440, Math.max(300, last.y + (Math.random() * 40 - 20)));
+            platforms.push({ x: newX, y: newY, w: 60, h: 16 });
+        }
+
+        const coinPositions = [];
+        for (let j = 0; j < platforms.length; j++) {
+            if (j % 2 === 0 || rng() > 0.5) {
+                const p = platforms[j];
+                const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
+                const coinY = p.y - 15 - Math.random() * 10;
+                coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
+            }
+        }
+        for (let j = 0; j < Math.floor(platCount/2); j++) {
+            const idx = Math.floor(rng() * platforms.length);
+            const p = platforms[idx];
+            const coinX = p.x + 10 + rng() * (p.w - 20);
+            const coinY = p.y - 20 - rng() * 15;
+            coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
+        }
+
+        const playerX = 30;
+        const playerY = platforms[0].y - PLAYER_H;
+        const lastPlat = platforms[platforms.length - 1];
+        let doorX = Math.min(lastPlat.x + lastPlat.w + 60, 780);
+        if (doorX < 700) doorX = 700;
+
+        levels.push({
+            platforms: platforms,
+            coins: coinPositions,
+            playerX: playerX,
+            playerY: playerY,
+            doorX: doorX
+        });
+    }
+    return levels;
 }
-LEVELS.push(makeLevel([
-    {x:30,y:440,w:160,h:16},{x:260,y:400,w:120,h:16},{x:460,y:440,w:180,h:16},{x:700,y:440,w:80,h:16}
-], [{x:80,y:420},{x:200,y:380},{x:320,y:380},{x:520,y:420},{x:640,y:420}], 50, 420, 780));
-LEVELS.push(makeLevel([
-    {x:20,y:440,w:100,h:16},{x:180,y:380,w:100,h:16},{x:340,y:440,w:100,h:16},{x:500,y:380,w:100,h:16},{x:660,y:440,w:120,h:16}
-], [{x:60,y:420},{x:220,y:360},{x:380,y:420},{x:540,y:360},{x:700,y:420}], 40, 420, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:440,w:80,h:16},{x:150,y:380,w:80,h:16},{x:290,y:320,w:80,h:16},{x:430,y:380,w:80,h:16},{x:570,y:440,w:80,h:16},{x:710,y:440,w:70,h:16}
-], [{x:40,y:420},{x:180,y:360},{x:320,y:300},{x:460,y:360},{x:600,y:420},{x:740,y:420}], 25, 420, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:445,w:60,h:16},{x:140,y:390,w:60,h:16},{x:270,y:335,w:60,h:16},{x:400,y:390,w:60,h:16},{x:530,y:335,w:60,h:16},{x:660,y:445,w:60,h:16},{x:760,y:445,w:30,h:16}
-], [{x:35,y:425},{x:165,y:370},{x:295,y:315},{x:425,y:370},{x:555,y:315},{x:685,y:425},{x:775,y:425}], 20, 425, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:445,w:60,h:16},{x:150,y:390,w:60,h:16},{x:290,y:335,w:60,h:16},{x:430,y:280,w:60,h:16},{x:570,y:335,w:60,h:16},{x:710,y:445,w:80,h:16}
-], [{x:35,y:425},{x:175,y:370},{x:315,y:315},{x:455,y:260},{x:595,y:315},{x:745,y:425}], 25, 425, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:445,w:50,h:16},{x:130,y:390,w:50,h:16},{x:250,y:335,w:50,h:16},{x:370,y:280,w:50,h:16},{x:490,y:335,w:50,h:16},{x:610,y:390,w:50,h:16},{x:730,y:445,w:60,h:16}
-], [{x:30,y:425},{x:150,y:370},{x:270,y:315},{x:390,y:260},{x:510,y:315},{x:630,y:370},{x:750,y:425}], 20, 425, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:445,w:50,h:16},{x:140,y:380,w:50,h:16},{x:270,y:315,w:50,h:16},{x:400,y:380,w:50,h:16},{x:530,y:315,w:50,h:16},{x:660,y:445,w:50,h:16},{x:770,y:445,w:20,h:16}
-], [{x:30,y:425},{x:160,y:360},{x:290,y:295},{x:420,y:360},{x:550,y:295},{x:680,y:425},{x:780,y:425}], 20, 425, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:445,w:40,h:16},{x:120,y:390,w:40,h:16},{x:230,y:335,w:40,h:16},{x:340,y:280,w:40,h:16},{x:450,y:225,w:40,h:16},{x:560,y:280,w:40,h:16},{x:670,y:335,w:40,h:16},{x:780,y:445,w:20,h:16}
-], [{x:25,y:425},{x:135,y:370},{x:245,y:315},{x:355,y:260},{x:465,y:205},{x:575,y:260},{x:685,y:315},{x:790,y:425}], 20, 425, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:445,w:30,h:16},{x:110,y:390,w:30,h:16},{x:210,y:335,w:30,h:16},{x:310,y:280,w:30,h:16},{x:410,y:225,w:30,h:16},{x:510,y:280,w:30,h:16},{x:610,y:335,w:30,h:16},{x:710,y:390,w:30,h:16},{x:810,y:445,w:10,h:16}
-], [{x:20,y:425},{x:120,y:370},{x:220,y:315},{x:320,y:260},{x:420,y:205},{x:520,y:260},{x:620,y:315},{x:720,y:370},{x:815,y:425}], 20, 425, 780));
-LEVELS.push(makeLevel([
-    {x:10,y:445,w:30,h:16},{x:120,y:390,w:30,h:16},{x:230,y:335,w:30,h:16},{x:340,y:280,w:30,h:16},{x:450,y:225,w:30,h:16},{x:560,y:280,w:30,h:16},{x:670,y:335,w:30,h:16},{x:780,y:445,w:20,h:16}
-], [{x:20,y:425},{x:130,y:370},{x:240,y:315},{x:350,y:260},{x:460,y:205},{x:570,y:260},{x:680,y:315},{x:790,y:425}], 20, 425, 780));
+
+const LEVELS = generateLevels(TOTAL_LEVELS);
 
 // ============================================================
 //  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
@@ -563,7 +727,13 @@ let gameData = {
     activeSkin: 0,
     completedLevels: [],
     multLevel: 0,
-    afkLevel: 0
+    afkLevel: 0,
+    // для защиты
+    coinHistory: [], // массив {time, coins}
+    lastLoginTime: 0,
+    loginCount: 0,
+    banned: false,
+    warningShown: false
 };
 
 let currentLevel = 0;
@@ -577,7 +747,7 @@ const DOOR_W = 30;
 const DOOR_H = 500;
 let keys = { left:false, right:false, jump:false };
 let canvas, ctx;
-let menuEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal;
+let menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal, banScreen;
 let levelGrid, coinDisplay, userIdDisplay, syncStatus;
 let afkActive = false;
 let afkInterval = null;
@@ -597,19 +767,21 @@ let introWalkTime = 0;
 
 let touchControls, touchLeft, touchRight, touchJump;
 
+let coinCollectCooldown = false;
+
 // ============================================================
-//  ФУНКЦИИ ДЛЯ АПГРЕЙДОВ И МНОЖИТЕЛЕЙ
+//  ФУНКЦИИ ДЛЯ АПГРЕЙДОВ
 // ============================================================
 function getTotalMultiplier() {
     const skin = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
     let base = skin.multiplier;
-    const bonus = gameData.multLevel * 0.2; // +0.2 за уровень
+    const bonus = gameData.multLevel * 0.2;
     return base + bonus;
 }
 
 function getAfkCooldown() {
-    let cooldown = 120 - gameData.afkLevel * 10; // -10 сек за уровень
-    if (cooldown < 20) cooldown = 20; // минимум 20 сек
+    let cooldown = 120 - gameData.afkLevel * 10;
+    if (cooldown < 20) cooldown = 20;
     return cooldown;
 }
 
@@ -637,10 +809,108 @@ function generateUserId() {
 }
 
 // ============================================================
-//  ЗАГРУЗКА / СОХРАНЕНИЕ ДАННЫХ (Firebase)
+//  ЗАЩИТА ОТ ЧИТЕРОВ
 // ============================================================
+function checkCoinRate() {
+    const now = Date.now();
+    // Удаляем старые записи
+    gameData.coinHistory = gameData.coinHistory.filter(entry => now - entry.time < RATE_WINDOW);
+    // Суммируем монеты за последние RATE_WINDOW мс
+    let total = 0;
+    for (let entry of gameData.coinHistory) {
+        total += entry.coins;
+    }
+    if (total > COIN_RATE_LIMIT) {
+        // Подозрительная активность
+        return true;
+    }
+    return false;
+}
+
+function addCoinRecord(amount) {
+    const now = Date.now();
+    gameData.coinHistory.push({ time: now, coins: amount });
+    // Если превысили лимит, баним
+    if (checkCoinRate()) {
+        banAccount('Слишком быстрый прирост монет (возможно, читерство)');
+    }
+}
+
+function checkLoginRate() {
+    const now = Date.now();
+    const last = gameData.lastLoginTime;
+    gameData.lastLoginTime = now;
+    if (last && (now - last) < MIN_LOGIN_INTERVAL) {
+        // Слишком частые входы
+        gameData.loginCount++;
+        if (gameData.loginCount > 3) {
+            banAccount('Слишком частые перезагрузки (авто-кликер?)');
+        }
+    } else {
+        gameData.loginCount = 0;
+    }
+}
+
+function banAccount(reason) {
+    if (gameData.banned) return;
+    gameData.banned = true;
+    gameData.banReason = reason || 'Подозрительная активность';
+    // Сохраняем в Firebase
+    if (currentUser) {
+        db.ref('users/' + currentUser.uid + '/banned').set(true);
+        db.ref('users/' + currentUser.uid + '/banReason').set(gameData.banReason);
+    }
+    saveGame();
+    showBanScreen();
+}
+
+function showBanScreen() {
+    // Скрываем всё, показываем бан
+    menuEl.style.display = 'none';
+    deviceSelectEl.style.display = 'none';
+    gameWrapper.style.display = 'none';
+    gameOverEl.style.display = 'none';
+    banScreen.style.display = 'flex';
+    // Останавливаем игру
+    gameRunning = false;
+    if (afkActive) stopAfk();
+}
+
+// ============================================================
+//  ЗАГРУЗКА / СОХРАНЕНИЕ
+// ============================================================
+function loadGame() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+        try {
+            const parsed = JSON.parse(raw);
+            Object.assign(gameData, parsed);
+            if (!gameData.ownedSkins) gameData.ownedSkins = [0];
+            if (!gameData.completedLevels) gameData.completedLevels = [];
+            if (gameData.coinHistory === undefined) gameData.coinHistory = [];
+            if (gameData.banned === undefined) gameData.banned = false;
+            if (gameData.warningShown === undefined) gameData.warningShown = false;
+        } catch(e) {}
+    }
+    if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
+    // Проверка на бан в локальном хранилище
+    if (gameData.banned) {
+        showBanScreen();
+    }
+}
+
+function saveGame() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameData));
+}
+
 function saveGameToFirebase() {
     if (!currentUser) return;
+    if (gameData.banned) {
+        // Если забанен, не сохраняем прогресс, но сохраняем флаг бана
+        db.ref('users/' + currentUser.uid + '/banned').set(true);
+        db.ref('users/' + currentUser.uid + '/banReason').set(gameData.banReason || 'Подозрительная активность');
+        return;
+    }
     const ref = db.ref('users/' + currentUser.uid);
     ref.set({
         maxLevel: gameData.maxLevel,
@@ -649,7 +919,9 @@ function saveGameToFirebase() {
         activeSkin: gameData.activeSkin,
         completedLevels: gameData.completedLevels,
         multLevel: gameData.multLevel,
-        afkLevel: gameData.afkLevel
+        afkLevel: gameData.afkLevel,
+        banned: gameData.banned || false,
+        banReason: gameData.banReason || ''
     }).catch(err => console.warn('Ошибка сохранения:', err));
 }
 
@@ -659,6 +931,14 @@ function loadGameFromFirebase() {
     ref.once('value').then(snapshot => {
         const data = snapshot.val();
         if (data) {
+            // Проверка на бан в Firebase
+            if (data.banned) {
+                gameData.banned = true;
+                gameData.banReason = data.banReason || 'Забанен администратором';
+                saveGame();
+                showBanScreen();
+                return;
+            }
             gameData.maxLevel = data.maxLevel || 1;
             gameData.coins = data.coins || 0;
             gameData.ownedSkins = data.ownedSkins || [0];
@@ -667,6 +947,11 @@ function loadGameFromFirebase() {
             gameData.multLevel = data.multLevel || 0;
             gameData.afkLevel = data.afkLevel || 0;
             if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
+            // Если не было бана в Firebase, сбросим локальный бан (если был)
+            if (gameData.banned && !data.banned) {
+                gameData.banned = false;
+                gameData.banReason = '';
+            }
         } else {
             saveGameToFirebase();
         }
@@ -750,7 +1035,6 @@ function buildMenu() {
     }
     if (coinDisplay) coinDisplay.textContent = gameData.coins;
     if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
-    // Обновляем AFK-кнопку
     if (afkActive) {
         afkBtnElement.textContent = '⏳ AFK фарм ВКЛ';
         afkBtnElement.classList.add('active');
@@ -761,7 +1045,7 @@ function buildMenu() {
 }
 
 // ============================================================
-//  МАГАЗИН (с отображением множителя)
+//  МАГАЗИН
 // ============================================================
 function renderShop() {
     const grid = document.getElementById('skinGrid');
@@ -865,7 +1149,6 @@ function buyAfkUpgrade() {
     updateUI();
     updateUpgradeUI();
     if (afkActive) {
-        // перезапускаем AFK с новым интервалом
         stopAfk();
         startAfk();
     }
@@ -925,7 +1208,7 @@ function transferCoins(targetId, amount) {
 }
 
 // ============================================================
-//  AFK-ФАРМ (с динамическим интервалом)
+//  AFK-ФАРМ
 // ============================================================
 function startAfk() {
     if (afkActive) return;
@@ -942,6 +1225,7 @@ function startAfk() {
         if (afkCountdown <= 0) {
             const reward = Math.round(5 * getTotalMultiplier());
             gameData.coins += reward;
+            addCoinRecord(reward); // запись для защиты
             saveGameToFirebase();
             updateUI();
             showToast('+' + reward + ' 🪙 (AFK-фарм)');
@@ -974,9 +1258,10 @@ function updateAfkTimerDisplay() {
 }
 
 // ============================================================
-//  ИГРОВАЯ ЛОГИКА (с множителем)
+//  ИГРОВАЯ ЛОГИКА
 // ============================================================
 function startLevel(index) {
+    if (gameData.banned) return;
     if (index < 0 || index >= TOTAL_LEVELS) return;
     currentLevel = index;
     const level = LEVELS[index];
@@ -987,9 +1272,15 @@ function startLevel(index) {
     player.walkTime = 0;
     coins = level.coins.map(c => ({x:c.x, y:c.y, radius:10, collected:false}));
 
+    coinCollectCooldown = false;
+    setTimeout(() => {
+        coinCollectCooldown = true;
+    }, 500);
+
     gameRunning = true;
     gameOverShown = false;
     menuEl.style.display = 'none';
+    deviceSelectEl.style.display = 'none';
     gameWrapper.style.display = 'block';
     gameOverEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'block';
@@ -1000,6 +1291,7 @@ function startLevel(index) {
 
 function update() {
     if (!gameRunning || gameOverShown) return;
+    if (gameData.banned) { gameRunning = false; return; }
 
     if (keys.left) player.vx = -MOVE_SPEED;
     else if (keys.right) player.vx = MOVE_SPEED;
@@ -1045,33 +1337,34 @@ function update() {
         }
     }
 
-    // Сбор монет – с множителем
     const mult = getTotalMultiplier();
-    for (let c of coins) {
-        if (!c.collected) {
-            const dx = (player.x + PLAYER_W/2) - c.x;
-            const dy = (player.y + PLAYER_H/2) - c.y;
-            if (Math.sqrt(dx*dx + dy*dy) < c.radius + 14) {
-                c.collected = true;
-                const reward = Math.round(1 * mult);
-                gameData.coins += reward;
-                saveGameToFirebase();
-                updateUI();
-                showToast('+' + reward + ' 🪙 (собрано)');
+    if (coinCollectCooldown) {
+        for (let c of coins) {
+            if (!c.collected) {
+                const dx = (player.x + PLAYER_W/2) - c.x;
+                const dy = (player.y + PLAYER_H/2) - c.y;
+                if (Math.sqrt(dx*dx + dy*dy) < c.radius + 14) {
+                    c.collected = true;
+                    const reward = Math.round(1 * mult);
+                    gameData.coins += reward;
+                    addCoinRecord(reward); // запись для защиты
+                    saveGameToFirebase();
+                    updateUI();
+                    showToast('+' + reward + ' 🪙 (собрано)');
+                }
             }
         }
     }
 
     if (player.y > 600) { restartLevel(); return; }
 
-    // Прохождение уровня – с множителем
     if (player.x + PLAYER_W > doorX && player.x < doorX + DOOR_W &&
         player.y + PLAYER_H > 0 && player.y < 500) {
         const levelNum = currentLevel + 1;
+        const reward = 1 + (levelNum - 1) * 2;
         if (!gameData.completedLevels.includes(levelNum)) {
-            const baseReward = COIN_REWARDS[currentLevel];
-            const reward = Math.round(baseReward * mult);
             gameData.coins += reward;
+            addCoinRecord(reward);
             gameData.completedLevels.push(levelNum);
             saveGameToFirebase();
             showToast('🎉 Уровень ' + levelNum + ' пройден! +' + reward + ' 🪙');
@@ -1094,7 +1387,7 @@ function restartLevel() {
 }
 
 // ============================================================
-//  ОТРИСОВКА ЗАСТАВКИ (адаптивная)
+//  ОТРИСОВКА ЗАСТАВКИ И ИГРЫ (без изменений)
 // ============================================================
 function drawIntro() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1238,9 +1531,6 @@ function drawIntro() {
     ctx.fillText('Кликни в любую точку', canvas.width/2, canvas.height*0.92);
 }
 
-// ============================================================
-//  ОТРИСОВКА ИГРЫ
-// ============================================================
 function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = '#1a1a3a';
@@ -1345,7 +1635,7 @@ function draw() {
 }
 
 // ============================================================
-//  ГЛАВНЫЙ ЦИКЛ
+//  ЦИКЛ
 // ============================================================
 function gameLoop() {
     if (introActive) {
@@ -1366,9 +1656,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// ============================================================
-//  ФИНАЛ
-// ============================================================
 function showGameOver() {
     gameRunning = false;
     gameOverShown = true;
@@ -1376,11 +1663,9 @@ function showGameOver() {
     gameOverEl.style.display = 'flex';
     document.getElementById('backToMenu').style.display = 'none';
     menuEl.style.display = 'none';
+    deviceSelectEl.style.display = 'none';
 }
 
-// ============================================================
-//  TOAST
-// ============================================================
 function showToast(text) {
     toastEl.textContent = text;
     toastEl.classList.add('show');
@@ -1413,7 +1698,7 @@ window.addEventListener('keyup', handleKeyUp);
 //  СЕНСОРНЫЕ КНОПКИ
 // ============================================================
 function setupTouchControls() {
-    if (!USE_MOBILE_LAYOUT) {
+    if (!useMobileLayout) {
         touchControls.style.display = 'none';
         return;
     }
@@ -1445,14 +1730,27 @@ function setupTouchControls() {
 }
 
 // ============================================================
+//  ПОКАЗАТЬ ВЫБОР УСТРОЙСТВА
+// ============================================================
+function showDeviceSelect() {
+    deviceSelectEl.style.display = 'flex';
+    menuEl.style.display = 'none';
+    gameWrapper.style.display = 'none';
+    gameOverEl.style.display = 'none';
+    document.getElementById('backToMenu').style.display = 'none';
+}
+
+// ============================================================
 //  ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 window.onload = function() {
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
     menuEl = document.getElementById('menu');
+    deviceSelectEl = document.getElementById('deviceSelect');
     gameWrapper = document.getElementById('gameWrapper');
     gameOverEl = document.getElementById('gameOver');
+    banScreen = document.getElementById('banScreen');
     shopEl = document.getElementById('shop');
     transferModal = document.getElementById('transferModal');
     upgradeModal = document.getElementById('upgradeModal');
@@ -1469,11 +1767,19 @@ window.onload = function() {
     touchRight = document.getElementById('touchRight');
     touchJump = document.getElementById('touchJump');
 
+    // Загружаем данные
+    loadGame();
+    // Проверка на бан
+    if (gameData.banned) {
+        showBanScreen();
+        // Но продолжаем выполнение, чтобы можно было показать бан экран
+    }
+
+    const hasDeviceMode = loadDeviceMode();
     setupTouchControls();
 
     signInAnonymously();
 
-    // Обработчики UI
     document.getElementById('backToMenu').addEventListener('click', goToMenu);
     document.getElementById('exitBtnMenu').addEventListener('click', () => { window.close(); });
     document.getElementById('exitBtn').addEventListener('click', () => { window.close(); });
@@ -1490,7 +1796,6 @@ window.onload = function() {
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     afkBtnElement.addEventListener('click', toggleAfk);
 
-    // Улучшения
     document.getElementById('upgradeBtn').addEventListener('click', () => {
         upgradeModal.style.display = 'flex';
         updateUpgradeUI();
@@ -1504,7 +1809,6 @@ window.onload = function() {
     document.getElementById('buyMultBtn').addEventListener('click', buyMultUpgrade);
     document.getElementById('buyAfkBtn').addEventListener('click', buyAfkUpgrade);
 
-    // Передача
     document.getElementById('transferBtn').addEventListener('click', () => {
         transferModal.style.display = 'flex';
         document.getElementById('targetIdInput').value = '';
@@ -1522,12 +1826,38 @@ window.onload = function() {
         transferCoins(target, amount);
     });
 
-    // Выход из заставки
+    document.getElementById('devicePc').addEventListener('click', () => {
+        useMobileLayout = false;
+        saveDeviceMode('pc');
+        setupTouchControls();
+        deviceSelectEl.style.display = 'none';
+        menuEl.style.display = 'flex';
+        updateUI();
+    });
+    document.getElementById('devicePhone').addEventListener('click', () => {
+        useMobileLayout = true;
+        saveDeviceMode('phone');
+        setupTouchControls();
+        deviceSelectEl.style.display = 'none';
+        menuEl.style.display = 'flex';
+        updateUI();
+    });
+
     function exitIntro() {
         if (introActive) {
             introActive = false;
-            menuEl.style.display = 'flex';
-            gameWrapper.style.display = 'none';
+            if (gameData.banned) {
+                showBanScreen();
+                return;
+            }
+            if (loadDeviceMode()) {
+                menuEl.style.display = 'flex';
+                deviceSelectEl.style.display = 'none';
+                gameWrapper.style.display = 'none';
+                updateUI();
+            } else {
+                showDeviceSelect();
+            }
             gameRunning = false;
             gameOverShown = false;
             gameOverEl.style.display = 'none';
@@ -1537,13 +1867,19 @@ window.onload = function() {
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
 
+    introActive = true;
     menuEl.style.display = 'none';
+    deviceSelectEl.style.display = 'none';
     gameWrapper.style.display = 'block';
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
     transferModal.style.display = 'none';
     upgradeModal.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
+    // Если забанен – покажем экран бана, скрыв остальное
+    if (gameData.banned) {
+        showBanScreen();
+    }
 
     window._loopStarted = false;
     requestAnimationFrame(gameLoop);
@@ -1559,6 +1895,7 @@ function goToMenu() {
     transferModal.style.display = 'none';
     upgradeModal.style.display = 'none';
     menuEl.style.display = 'flex';
+    deviceSelectEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
     updateUI();
     updateUpgradeUI();
@@ -1577,6 +1914,9 @@ function resetProgress() {
     updateUI();
     showToast('Прогресс уровней сброшен!');
 }
+
+// Проверяем скорость монет при запуске
+checkLoginRate();
 </script>
 </body>
 </html>
