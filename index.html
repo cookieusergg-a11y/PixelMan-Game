@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* Все стили без изменений (такие же как в v3.2) */
+        /* Все стили без изменений – как в v3.4 */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; touch-action: manipulation; }
         #app { background: #12122a; border-radius: 16px; padding: 16px; box-shadow: 0 0 40px #2a2a6a; position: relative; width: 100%; max-width: 820px; margin: 0 auto; }
@@ -110,7 +110,7 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v3.3</div>
+        <div class="version">v3.5</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -279,16 +279,19 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (50 уникальных)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (усложнённая версия)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
     for (let i = 0; i < count; i++) {
-        const difficulty = i / count;
-        const platCount = 4 + Math.floor(difficulty * 6) + Math.floor(Math.random() * 2);
-        const baseY = 440 - Math.floor(difficulty * 40);
-        const minGap = 70 - Math.floor(difficulty * 20);
-        const maxGap = 130 - Math.floor(difficulty * 30);
+        // Сложность от 0 до 1, но усиливаем влияние
+        const difficulty = Math.pow(i / count, 1.5); // более крутой рост сложности
+        // Количество платформ: от 4 до 12 (раньше было до 10)
+        const platCount = 4 + Math.floor(difficulty * 8) + Math.floor(Math.random() * 2);
+        const baseY = 440 - Math.floor(difficulty * 50);
+        // Разрывы становятся очень большими на поздних уровнях
+        const minGap = 60 - Math.floor(difficulty * 30);
+        const maxGap = 130 - Math.floor(difficulty * 20) + 10;
         const platforms = [];
         const startPlat = { x: 10, y: baseY, w: 70, h: 16 };
         platforms.push(startPlat);
@@ -298,33 +301,36 @@ function generateLevels(count) {
         const rng = (seed) => { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
         const r = rng(i * 137 + 42);
         for (let j = 0; j < platCount; j++) {
-            const w = 40 + Math.floor(r() * 30) + Math.floor(difficulty * 20);
+            const w = 30 + Math.floor(r() * 25) + Math.floor(difficulty * 15); // платформы становятся уже
             const h = 16;
-            const yOffset = Math.floor(r() * 40 - 20) - Math.floor(difficulty * 20);
-            const py = Math.min(440, Math.max(300, cy + yOffset));
-            const gap = Math.floor((minGap + r() * (maxGap - minGap)) + difficulty * 20);
+            // Вертикальный разброс увеличивается
+            const yOffset = Math.floor(r() * 50 - 25) - Math.floor(difficulty * 30);
+            const py = Math.min(445, Math.max(280, cy + yOffset));
+            const gap = Math.floor((minGap + r() * (maxGap - minGap)) + difficulty * 30);
             cx += gap;
             if (cx + w > maxX) break;
             platforms.push({ x: cx, y: py, w, h });
             cx += w;
             cy = py;
         }
-        while (platforms.length < 3) {
+        // Добавляем дополнительные платформы, если мало
+        while (platforms.length < 4) {
             const last = platforms[platforms.length - 1];
-            const newX = last.x + last.w + 80 + Math.floor(difficulty * 40);
-            const newY = Math.min(440, Math.max(300, last.y + (Math.random() * 40 - 20) - difficulty * 20));
-            platforms.push({ x: newX, y: newY, w: 60, h: 16 });
+            const newX = last.x + last.w + 90 + Math.floor(difficulty * 50);
+            const newY = Math.min(445, Math.max(280, last.y + (Math.random() * 50 - 25) - difficulty * 30));
+            platforms.push({ x: newX, y: newY, w: 50, h: 16 });
         }
+        // Монет – больше, но разбросанных
         const coinPositions = [];
         for (let j = 1; j < platforms.length; j++) {
-            if (j % 2 === 0 || r() > 0.6 - difficulty * 0.2) {
+            if (j % 2 === 0 || r() > 0.5 - difficulty * 0.3) {
                 const p = platforms[j];
                 const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
                 const coinY = p.y - 15 - Math.random() * 10;
                 coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
             }
         }
-        const extraCount = Math.floor(platCount / 2) + Math.floor(difficulty * 3);
+        const extraCount = Math.floor(platCount * 0.6) + Math.floor(difficulty * 4);
         for (let j = 0; j < extraCount; j++) {
             const idx = Math.floor(r() * platforms.length);
             if (idx === 0) continue;
@@ -336,7 +342,7 @@ function generateLevels(count) {
         const playerX = startPlat.x + 10;
         const playerY = startPlat.y - PLAYER_H;
         const lastPlat = platforms[platforms.length - 1];
-        let doorX = Math.min(lastPlat.x + lastPlat.w + 60 + Math.floor(difficulty * 30), 780);
+        let doorX = Math.min(lastPlat.x + lastPlat.w + 80 + Math.floor(difficulty * 40), 780);
         if (doorX < 700) doorX = 700;
         levels.push({
             platforms: platforms,
@@ -385,20 +391,22 @@ let useMobileLayout = false;
 let isAdmin = false;
 
 // ============================================================
-//  АНТИ-ЧИТ (ПОРОГ 10 000 000)
+//  АНТИ-ЧИТ (ПОРОГ 10 МЛН ЗА 3 СЕКУНДЫ, АДМИНЫ НЕ БАНЯТСЯ)
 // ============================================================
 let coinHistory = [];
 let lastWarningTime = 0;
 
 function checkCoinRate(amount) {
-    if (isAdmin) {
+    // Админы – защищены от бана
+    if (currentUser && ADMIN_UIDS.includes(currentUser.uid)) {
         coinHistory = [];
         return false;
     }
     coinHistory.push({ amount, time: Date.now() });
-    coinHistory = coinHistory.filter(entry => Date.now() - entry.time < 5000);
+    // Окно 3 секунды вместо 5
+    coinHistory = coinHistory.filter(entry => Date.now() - entry.time < 3000);
     const total = coinHistory.reduce((sum, e) => sum + e.amount, 0);
-    const threshold = 10000000; // 10 млн за 5 секунд
+    const threshold = 10000000; // 10 млн за 3 секунды
     if (total > threshold) {
         const now = Date.now();
         if (lastWarningTime > 0 && (now - lastWarningTime) < 30000) {
@@ -416,6 +424,11 @@ function checkCoinRate(amount) {
 
 function banAccount(reason) {
     if (!currentUser) return;
+    // Ещё одна защита – если админ, то не баним
+    if (ADMIN_UIDS.includes(currentUser.uid)) {
+        showToast('Админы не подлежат блокировке.');
+        return;
+    }
     db.ref('users/' + currentUser.uid + '/banned').set(true);
     db.ref('users/' + currentUser.uid + '/banReason').set(reason);
     gameData.banned = true;
@@ -525,9 +538,15 @@ function loadGameFromFirebase() {
         const data = snapshot.val();
         if (data) {
             if (data.banned) {
-                gameData.banned = true;
-                banAccount(data.banReason || 'Нарушение правил');
-                return;
+                if (ADMIN_UIDS.includes(currentUser.uid)) {
+                    db.ref('users/' + currentUser.uid + '/banned').set(false);
+                    db.ref('users/' + currentUser.uid + '/banReason').remove();
+                    showToast('Администратор – бан снят автоматически.');
+                } else {
+                    gameData.banned = true;
+                    banAccount(data.banReason || 'Нарушение правил');
+                    return;
+                }
             }
             gameData.maxLevel = data.maxLevel || 1;
             gameData.coins = data.coins || 0;
