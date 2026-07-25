@@ -9,118 +9,24 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* все стили без изменений (как в предыдущем коде) */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body {
-            background: #0a0a1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            touch-action: manipulation;
-        }
-        #app {
-            background: #12122a;
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: 0 0 40px #2a2a6a;
-            position: relative;
-            width: 100%;
-            max-width: 820px;
-            margin: 0 auto;
-        }
-        canvas {
-            display: block;
-            margin: 0 auto;
-            background: #1a1a3a;
-            border-radius: 10px;
-            width: 100%;
-            height: auto;
-            aspect-ratio: 8 / 5;
-            cursor: pointer;
-            touch-action: none;
-            position: relative;
-            z-index: 1;
-        }
-        .menu {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-            padding: 20px;
-            min-width: 280px;
-            width: 100%;
-        }
-        .menu h1 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(24px, 6vw, 48px);
-            color: #fff;
-            text-shadow: 0 0 20px #5af, 0 0 40px #3af;
-            letter-spacing: 4px;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-        .menu .profile {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 420px;
-            color: #aaa;
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(10px, 2.5vw, 14px);
-            background: #1a1a3a;
-            padding: 8px 16px;
-            border-radius: 30px;
-            border: 1px solid #3a3a6a;
-            gap: 5px;
-        }
+        body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; touch-action: manipulation; }
+        #app { background: #12122a; border-radius: 16px; padding: 16px; box-shadow: 0 0 40px #2a2a6a; position: relative; width: 100%; max-width: 820px; margin: 0 auto; }
+        canvas { display: block; margin: 0 auto; background: #1a1a3a; border-radius: 10px; width: 100%; height: auto; aspect-ratio: 8 / 5; cursor: pointer; touch-action: none; position: relative; z-index: 1; }
+        .menu { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 20px; min-width: 280px; width: 100%; }
+        .menu h1 { font-family: 'Press Start 2P', cursive; font-size: clamp(24px, 6vw, 48px); color: #fff; text-shadow: 0 0 20px #5af, 0 0 40px #3af; letter-spacing: 4px; margin-bottom: 5px; text-align: center; }
+        .menu .profile { display: flex; flex-wrap: wrap; justify-content: space-between; width: 100%; max-width: 420px; color: #aaa; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2.5vw, 14px); background: #1a1a3a; padding: 8px 16px; border-radius: 30px; border: 1px solid #3a3a6a; gap: 5px; }
         .menu .profile .id { color: #8af; }
         .menu .profile .coins { color: #ffd700; }
         .menu .profile .sync-status { color: #8f8; font-size: 10px; margin-left: 10px; }
-        .level-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            width: 100%;
-            max-width: 420px;
-        }
-        .level-btn {
-            padding: 8px 0;
-            font-size: clamp(10px, 1.8vw, 16px);
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            background: #2a2a4a;
-            color: #888;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 4px 0 #00000066;
-            font-family: 'Press Start 2P', cursive;
-        }
+        .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; max-width: 420px; }
+        .level-btn { padding: 8px 0; font-size: clamp(10px, 1.8vw, 16px); font-weight: bold; border: none; border-radius: 8px; background: #2a2a4a; color: #888; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #00000066; font-family: 'Press Start 2P', cursive; }
         .level-btn.unlocked { background: #3a7eb5; color: #fff; box-shadow: 0 4px 0 #1f4a6e; }
         .level-btn.unlocked:hover { background: #4a9ed5; transform: scale(1.05); }
         .level-btn.locked { background: #2a2a3a; color: #555; cursor: not-allowed; opacity: 0.5; }
         .level-btn.completed { background: #4a8a5a; color: #cfc; box-shadow: 0 4px 0 #2a5a3a; }
-        .menu-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 5px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .menu-actions button {
-            padding: 10px 20px;
-            font-size: clamp(10px, 2vw, 14px);
-            border: none;
-            border-radius: 30px;
-            background: #2a2a5a;
-            color: #fff;
-            cursor: pointer;
-            transition: 0.2s;
-            font-family: 'Press Start 2P', cursive;
-        }
+        .menu-actions { display: flex; gap: 12px; margin-top: 5px; flex-wrap: wrap; justify-content: center; }
+        .menu-actions button { padding: 10px 20px; font-size: clamp(10px, 2vw, 14px); border: none; border-radius: 30px; background: #2a2a5a; color: #fff; cursor: pointer; transition: 0.2s; font-family: 'Press Start 2P', cursive; }
         .menu-actions button:hover { background: #3a3a7a; transform: scale(1.03); }
         .menu-actions .shop-btn { background: #8a6a2a; }
         .menu-actions .shop-btn:hover { background: #aa8a3a; }
@@ -130,194 +36,45 @@
         .menu-actions .transfer-btn:hover { background: #3a8a8a; }
         .menu-actions .upgrade-btn { background: #4a2a6a; }
         .menu-actions .upgrade-btn:hover { background: #6a3a8a; }
-        .afk-area {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: #1a1a3a;
-            padding: 8px 20px;
-            border-radius: 40px;
-            border: 1px solid #4a4a7a;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .afk-btn {
-            background: #2a6a3a;
-            color: #fff;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: clamp(10px, 2vw, 16px);
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: bold;
-            font-family: 'Press Start 2P', cursive;
-        }
+        .afk-area { display: flex; align-items: center; gap: 15px; background: #1a1a3a; padding: 8px 20px; border-radius: 40px; border: 1px solid #4a4a7a; flex-wrap: wrap; justify-content: center; }
+        .afk-btn { background: #2a6a3a; color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-size: clamp(10px, 2vw, 16px); cursor: pointer; transition: 0.2s; font-weight: bold; font-family: 'Press Start 2P', cursive; }
         .afk-btn.active { background: #6a3a2a; }
         .afk-btn:hover { transform: scale(1.05); }
-        .afk-timer {
-            color: #8af;
-            font-size: clamp(12px, 2vw, 16px);
-            min-width: 60px;
-            text-align: center;
-            font-family: 'Press Start 2P', cursive;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: #12122a;
-            padding: 30px;
-            border-radius: 16px;
-            min-width: 280px;
-            max-width: 90%;
-            border: 2px solid #3a3a7a;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        .afk-timer { color: #8af; font-size: clamp(12px, 2vw, 16px); min-width: 60px; text-align: center; font-family: 'Press Start 2P', cursive; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #12122a; padding: 30px; border-radius: 16px; min-width: 280px; max-width: 90%; border: 2px solid #3a3a7a; display: flex; flex-direction: column; gap: 20px; }
         .modal-content h2 { color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(16px, 4vw, 24px); text-align: center; }
         .modal-content label { color: #ccc; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); }
-        .modal-content input {
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #3a3a6a;
-            background: #1a1a3a;
-            color: #fff;
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(12px, 2.5vw, 16px);
-            width: 100%;
-        }
+        .modal-content input { padding: 10px; border-radius: 8px; border: 1px solid #3a3a6a; background: #1a1a3a; color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(12px, 2.5vw, 16px); width: 100%; }
         .modal-content .modal-actions { display: flex; gap: 15px; justify-content: center; }
-        .modal-content .modal-actions button {
-            padding: 10px 24px;
-            border: none;
-            border-radius: 20px;
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(10px, 2vw, 14px);
-            cursor: pointer;
-        }
+        .modal-content .modal-actions button { padding: 10px 24px; border: none; border-radius: 20px; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); cursor: pointer; }
         .modal-content .modal-actions .send-btn { background: #2a8a3a; color: #fff; }
         .modal-content .modal-actions .send-btn:hover { background: #3aaa4a; }
         .modal-content .modal-actions .cancel-btn { background: #633; color: #fff; }
         .modal-content .modal-actions .cancel-btn:hover { background: #833; }
-        .upgrade-item {
-            background: #1a1a3a;
-            padding: 15px;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        .upgrade-item { background: #1a1a3a; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; }
         .upgrade-item .label { color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(12px, 2.5vw, 16px); }
         .upgrade-item .info { color: #aaa; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); display: flex; justify-content: space-between; }
-        .upgrade-item button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 20px;
-            background: #3a7eb5;
-            color: #fff;
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(10px, 2vw, 14px);
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        .upgrade-item button { padding: 8px 16px; border: none; border-radius: 20px; background: #3a7eb5; color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); cursor: pointer; transition: 0.2s; }
         .upgrade-item button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .upgrade-item button:hover:not(:disabled) { background: #4a9ed5; }
-        #deviceSelect {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
-            padding: 20px;
-            min-height: 300px;
-        }
-        #deviceSelect h2 {
-            font-family: 'Press Start 2P', cursive;
-            color: #fff;
-            font-size: clamp(18px, 4vw, 32px);
-            text-shadow: 0 0 20px #5af;
-            text-align: center;
-        }
-        #deviceSelect .device-buttons {
-            display: flex;
-            gap: 40px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        #deviceSelect .device-buttons button {
-            padding: 20px 40px;
-            font-size: clamp(18px, 3vw, 28px);
-            border: none;
-            border-radius: 20px;
-            background: #2a5a8a;
-            color: #fff;
-            font-family: 'Press Start 2P', cursive;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 0 20px rgba(42, 90, 138, 0.5);
-            min-width: 150px;
-        }
-        #deviceSelect .device-buttons button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(42, 90, 138, 0.9);
-        }
-        #deviceSelect .device-buttons button.phone-btn {
-            background: #2a8a5a;
-            box-shadow: 0 0 20px rgba(42, 138, 90, 0.5);
-        }
-        #deviceSelect .device-buttons button.phone-btn:hover {
-            box-shadow: 0 0 40px rgba(42, 138, 90, 0.9);
-        }
-        #gameOver {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-            width: 100%;
-            aspect-ratio: 8/5;
-            border-radius: 10px;
-            color: #fff;
-            text-align: center;
-        }
+        #deviceSelect { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 30px; padding: 20px; min-height: 300px; }
+        #deviceSelect h2 { font-family: 'Press Start 2P', cursive; color: #fff; font-size: clamp(18px, 4vw, 32px); text-shadow: 0 0 20px #5af; text-align: center; }
+        #deviceSelect .device-buttons { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; }
+        #deviceSelect .device-buttons button { padding: 20px 40px; font-size: clamp(18px, 3vw, 28px); border: none; border-radius: 20px; background: #2a5a8a; color: #fff; font-family: 'Press Start 2P', cursive; cursor: pointer; transition: 0.2s; box-shadow: 0 0 20px rgba(42, 90, 138, 0.5); min-width: 150px; }
+        #deviceSelect .device-buttons button:hover { transform: scale(1.05); box-shadow: 0 0 40px rgba(42, 90, 138, 0.9); }
+        #deviceSelect .device-buttons button.phone-btn { background: #2a8a5a; box-shadow: 0 0 20px rgba(42, 138, 90, 0.5); }
+        #deviceSelect .device-buttons button.phone-btn:hover { box-shadow: 0 0 40px rgba(42, 138, 90, 0.9); }
+        #gameOver { display: none; flex-direction: column; justify-content: center; align-items: center; background: #000; width: 100%; aspect-ratio: 8/5; border-radius: 10px; color: #fff; text-align: center; }
         #gameOver h2 { font-size: clamp(28px, 8vw, 56px); letter-spacing: 4px; margin-bottom: 10px; font-family: 'Press Start 2P', cursive; }
         #gameOver p { font-size: clamp(14px, 3vw, 24px); opacity: 0.5; margin-bottom: 40px; font-family: 'Press Start 2P', cursive; }
         #gameOver button { padding: 12px 40px; font-size: clamp(16px, 3vw, 28px); background: #333; color: #fff; border: 1px solid #555; border-radius: 30px; cursor: pointer; font-family: 'Press Start 2P', cursive; }
         #gameOver button:hover { background: #555; }
-        .shop {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            padding: 20px;
-            background: #0d0d22;
-            border-radius: 12px;
-            min-width: 280px;
-            width: 100%;
-        }
+        .shop { display: none; flex-direction: column; align-items: center; gap: 15px; padding: 20px; background: #0d0d22; border-radius: 12px; min-width: 280px; width: 100%; }
         .shop h2 { color: #ffd700; font-size: clamp(18px, 4vw, 28px); font-family: 'Press Start 2P', cursive; }
         .shop .close-shop { background: #633; color: #fff; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); }
         .shop-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; width: 100%; max-width: 420px; }
-        .skin-card {
-            background: #1a1a3a;
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            color: #fff;
-            border: 2px solid transparent;
-            transition: 0.2s;
-        }
+        .skin-card { background: #1a1a3a; border-radius: 12px; padding: 12px; text-align: center; color: #fff; border: 2px solid transparent; transition: 0.2s; }
         .skin-card.active { border-color: #ffd700; box-shadow: 0 0 20px #ffd70055; }
         .skin-card .color-preview { display: inline-block; width: 40px; height: 40px; border-radius: 50%; margin-bottom: 6px; border: 1px solid #888; }
         .skin-card .skin-name { font-size: clamp(10px, 2vw, 14px); font-family: 'Press Start 2P', cursive; }
@@ -328,153 +85,22 @@
         .skin-card button.buy { background: #7a8a2a; }
         .skin-card button.select { background: #3a7eb5; }
         .skin-card button.active-btn { background: #4a8a5a; }
-        #backToMenu {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 6px 14px;
-            background: #333;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            display: none;
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(10px, 2vw, 14px);
-            z-index: 10;
-        }
+        #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); z-index: 10; }
         #backToMenu:hover { background: #555; }
-        .game-wrapper {
-            position: relative;
-            display: block;
-        }
-        .touch-controls {
-            display: none;
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            padding: 0 10px;
-            z-index: 5;
-            justify-content: center;
-            pointer-events: none;
-            gap: 30px;
-        }
-        .touch-controls .left-right {
-            display: flex;
-            gap: 25px;
-            pointer-events: auto;
-            margin-right: auto;
-        }
-        .touch-controls .left-right button {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.4);
-            background: rgba(255,255,255,0.2);
-            color: #fff;
-            font-size: 28px;
-            backdrop-filter: blur(4px);
-            touch-action: manipulation;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .touch-controls .left-right button:active {
-            background: rgba(255,255,255,0.5);
-        }
-        .touch-controls .jump-btn {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            border: 4px solid #ffd700;
-            background: rgba(255,215,0,0.35);
-            color: #fff;
-            font-size: 36px;
-            font-weight: bold;
-            backdrop-filter: blur(4px);
-            touch-action: manipulation;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            box-shadow: 0 0 30px rgba(255,215,0,0.6);
-            text-shadow: 0 0 20px #ffd700;
-            pointer-events: auto;
-            margin-left: -20px;
-        }
-        .touch-controls .jump-btn:active {
-            background: rgba(255,215,0,0.7);
-            transform: scale(0.95);
-        }
-        @media (max-width: 600px) {
-            .touch-controls .left-right button {
-                width: 60px;
-                height: 60px;
-                font-size: 24px;
-            }
-            .touch-controls .jump-btn {
-                width: 80px;
-                height: 80px;
-                font-size: 30px;
-                margin-left: -10px;
-            }
-        }
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #2a2a4a;
-            color: #ffd700;
-            padding: 10px 30px;
-            border-radius: 30px;
-            font-size: clamp(12px, 2.5vw, 18px);
-            border: 1px solid #ffd70055;
-            box-shadow: 0 0 30px #000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            font-family: 'Press Start 2P', cursive;
-        }
+        .game-wrapper { position: relative; display: block; }
+        .touch-controls { display: none; position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 10px; z-index: 5; justify-content: center; pointer-events: none; gap: 30px; }
+        .touch-controls .left-right { display: flex; gap: 25px; pointer-events: auto; margin-right: auto; }
+        .touch-controls .left-right button { width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.2); color: #fff; font-size: 28px; backdrop-filter: blur(4px); touch-action: manipulation; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .touch-controls .left-right button:active { background: rgba(255,255,255,0.5); }
+        .touch-controls .jump-btn { width: 90px; height: 90px; border-radius: 50%; border: 4px solid #ffd700; background: rgba(255,215,0,0.35); color: #fff; font-size: 36px; font-weight: bold; backdrop-filter: blur(4px); touch-action: manipulation; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 30px rgba(255,215,0,0.6); text-shadow: 0 0 20px #ffd700; pointer-events: auto; margin-left: -20px; }
+        .touch-controls .jump-btn:active { background: rgba(255,215,0,0.7); transform: scale(0.95); }
+        @media (max-width: 600px) { .touch-controls .left-right button { width: 60px; height: 60px; font-size: 24px; } .touch-controls .jump-btn { width: 80px; height: 80px; font-size: 30px; margin-left: -10px; } }
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: clamp(12px, 2.5vw, 18px); border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-family: 'Press Start 2P', cursive; }
         .toast.show { opacity: 1; }
-
-        /* Экран бана */
-        #banScreen {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-            color: #ff4444;
-            width: 100%;
-            aspect-ratio: 8/5;
-            border-radius: 10px;
-            text-align: center;
-            padding: 20px;
-        }
-        #banScreen h1 {
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(24px, 6vw, 48px);
-            margin-bottom: 20px;
-            text-shadow: 0 0 30px #ff0000;
-        }
-        #banScreen p {
-            font-family: 'Press Start 2P', cursive;
-            font-size: clamp(14px, 2.5vw, 22px);
-            color: #ff8888;
-            max-width: 80%;
-        }
     </style>
 </head>
 <body>
 <div id="app">
-    <!-- Меню -->
     <div class="menu" id="menu">
         <h1>PixelMan</h1>
         <div class="profile">
@@ -560,57 +186,22 @@
         <p>может быть..</p>
         <button id="exitBtn">Выйти</button>
     </div>
-
-    <!-- Экран бана -->
-    <div id="banScreen">
-        <h1>⛔ ДОСТУП ЗАБЛОКИРОВАН</h1>
-        <p>Ваш аккаунт был автоматически забанен за подозрительную активность (читерство/эксплойты).<br>Обратитесь к администратору, если считаете это ошибкой.</p>
-    </div>
 </div>
 <div id="toast" class="toast"></div>
 
 <script>
 // ============================================================
-//  НАСТРОЙКИ
-// ============================================================
-const TOTAL_LEVELS = 50;
-const COIN_RATE_LIMIT = 1000; // макс монет за 5 секунд
-const RATE_WINDOW = 5000; // 5 секунд
-const MIN_LOGIN_INTERVAL = 2000; // мин. 2 секунды между запусками
-
-// ============================================================
-//  ВЫБОР УСТРОЙСТВА
-// ============================================================
-let useMobileLayout = false;
-
-function loadDeviceMode() {
-    const saved = localStorage.getItem('deviceMode');
-    if (saved === 'phone') {
-        useMobileLayout = true;
-    } else if (saved === 'pc') {
-        useMobileLayout = false;
-    } else {
-        return false;
-    }
-    return true;
-}
-
-function saveDeviceMode(mode) {
-    localStorage.setItem('deviceMode', mode);
-}
-
-// ============================================================
 //  FIREBASE CONFIG
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyC1yg9Up6LrfSt1VTHyBK_gvZ8058CSI6A",
-  authDomain: "pixelman-843bb.firebaseapp.com",
-  databaseURL: "https://pixelman-843bb-default-rtdb.firebaseio.com",
-  projectId: "pixelman-843bb",
-  storageBucket: "pixelman-843bb.firebasestorage.app",
-  messagingSenderId: "2008577690",
-  appId: "1:2008577690:web:61e4c1980e3ca4674e5123",
-  measurementId: "G-4QP3LMZ9WV"
+    apiKey: "AIzaSyC1yg9Up6LrfSt1VTHyBK_gvZ8058CSI6A",
+    authDomain: "pixelman-843bb.firebaseapp.com",
+    databaseURL: "https://pixelman-843bb-default-rtdb.firebaseio.com",
+    projectId: "pixelman-843bb",
+    storageBucket: "pixelman-843bb.firebasestorage.app",
+    messagingSenderId: "2008577690",
+    appId: "1:2008577690:web:61e4c1980e3ca4674e5123",
+    measurementId: "G-4QP3LMZ9WV"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -620,6 +211,7 @@ const db = firebase.database();
 // ============================================================
 //  КОНСТАНТЫ
 // ============================================================
+const TOTAL_LEVELS = 50;
 const STORAGE_KEY = 'pixelman_data';
 const GRAVITY = 0.5;
 const JUMP_FORCE = -9.0;
@@ -637,20 +229,13 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ 50 УРОВНЕЙ (код без изменений)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ
 // ============================================================
 function generateLevels(count) {
     const levels = [];
-    function seededRandom(seed) {
-        let s = seed;
-        return function() {
-            s = (s * 9301 + 49297) % 233280;
-            return s / 233280;
-        };
-    }
-
     for (let i = 0; i < count; i++) {
-        const rng = seededRandom(i * 137 + 42);
+        const rng = (seed) => { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
+        const r = rng(i * 137 + 42);
         const baseY = 440 - (i % 5) * 5 - Math.floor(i / 8) * 3;
         const platCount = 4 + (i % 5) + Math.floor(i / 6);
         const platforms = [];
@@ -661,11 +246,11 @@ function generateLevels(count) {
         const maxGap = 130;
 
         for (let j = 0; j < platCount; j++) {
-            const w = 50 + Math.floor(rng() * 30);
+            const w = 50 + Math.floor(r() * 30);
             const h = 16;
-            const yOffset = Math.floor(rng() * 40 - 20);
+            const yOffset = Math.floor(r() * 40 - 20);
             const py = Math.min(440, Math.max(300, cy + yOffset));
-            const gap = minGap + Math.floor(rng() * (maxGap - minGap));
+            const gap = minGap + Math.floor(r() * (maxGap - minGap));
             cx += gap;
             if (cx + w > maxX) break;
             platforms.push({ x: cx, y: py, w, h });
@@ -681,7 +266,7 @@ function generateLevels(count) {
 
         const coinPositions = [];
         for (let j = 0; j < platforms.length; j++) {
-            if (j % 2 === 0 || rng() > 0.5) {
+            if (j % 2 === 0 || r() > 0.5) {
                 const p = platforms[j];
                 const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
                 const coinY = p.y - 15 - Math.random() * 10;
@@ -689,10 +274,10 @@ function generateLevels(count) {
             }
         }
         for (let j = 0; j < Math.floor(platCount/2); j++) {
-            const idx = Math.floor(rng() * platforms.length);
+            const idx = Math.floor(r() * platforms.length);
             const p = platforms[idx];
-            const coinX = p.x + 10 + rng() * (p.w - 20);
-            const coinY = p.y - 20 - rng() * 15;
+            const coinX = p.x + 10 + r() * (p.w - 20);
+            const coinY = p.y - 20 - r() * 15;
             coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
         }
 
@@ -713,7 +298,11 @@ function generateLevels(count) {
     return levels;
 }
 
-const LEVELS = generateLevels(TOTAL_LEVELS);
+let LEVELS = generateLevels(TOTAL_LEVELS);
+if (LEVELS.length === 0) {
+    console.warn('Уровни не сгенерированы, повторная попытка');
+    LEVELS = generateLevels(TOTAL_LEVELS);
+}
 
 // ============================================================
 //  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
@@ -728,12 +317,7 @@ let gameData = {
     completedLevels: [],
     multLevel: 0,
     afkLevel: 0,
-    // для защиты
-    coinHistory: [], // массив {time, coins}
-    lastLoginTime: 0,
-    loginCount: 0,
-    banned: false,
-    warningShown: false
+    banned: false
 };
 
 let currentLevel = 0;
@@ -747,7 +331,7 @@ const DOOR_W = 30;
 const DOOR_H = 500;
 let keys = { left:false, right:false, jump:false };
 let canvas, ctx;
-let menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal, banScreen;
+let menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal;
 let levelGrid, coinDisplay, userIdDisplay, syncStatus;
 let afkActive = false;
 let afkInterval = null;
@@ -766,8 +350,44 @@ let introJumpTimer = 0;
 let introWalkTime = 0;
 
 let touchControls, touchLeft, touchRight, touchJump;
-
 let coinCollectCooldown = false;
+
+// ============================================================
+//  АНТИ-ЧИТ: МОНИТОРИНГ СКОРОСТИ МОНЕТ (БЕЗ БАНА ПО ВХОДАМ)
+// ============================================================
+let coinHistory = [];
+
+function checkCoinRate(amount) {
+    coinHistory.push({ amount, time: Date.now() });
+    coinHistory = coinHistory.filter(entry => Date.now() - entry.time < 5000);
+    const total = coinHistory.reduce((sum, e) => sum + e.amount, 0);
+    if (total > 1000) {
+        banAccount('Слишком быстрый набор монет (читерство)');
+        return true;
+    }
+    return false;
+}
+
+function banAccount(reason) {
+    if (!currentUser) return;
+    db.ref('users/' + currentUser.uid + '/banned').set(true);
+    db.ref('users/' + currentUser.uid + '/banReason').set(reason);
+    gameData.banned = true;
+    gameData.coins = 0;
+    saveGameToFirebase();
+    gameRunning = false;
+    gameOverShown = false;
+    menuEl.style.display = 'none';
+    gameWrapper.style.display = 'none';
+    document.body.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:#0a0a1a; color:#fff; font-family:'Press Start 2P', cursive; text-align:center; padding:20px;">
+            <h1 style="color:#ff4444;">🚫 АККАУНТ ЗАБЛОКИРОВАН</h1>
+            <p style="margin:20px 0; font-size:clamp(16px, 3vw, 24px);">Причина: ${reason}</p>
+            <p style="font-size:clamp(12px, 2vw, 16px); color:#aaa;">Ваш баланс обнулён. Обратитесь к администратору.</p>
+            <button onclick="location.reload()" style="margin-top:30px; padding:12px 30px; background:#333; color:#fff; border:1px solid #555; border-radius:10px; cursor:pointer; font-family:'Press Start 2P', cursive; font-size:14px;">Обновить страницу</button>
+        </div>
+    `;
+}
 
 // ============================================================
 //  ФУНКЦИИ ДЛЯ АПГРЕЙДОВ
@@ -809,108 +429,10 @@ function generateUserId() {
 }
 
 // ============================================================
-//  ЗАЩИТА ОТ ЧИТЕРОВ
-// ============================================================
-function checkCoinRate() {
-    const now = Date.now();
-    // Удаляем старые записи
-    gameData.coinHistory = gameData.coinHistory.filter(entry => now - entry.time < RATE_WINDOW);
-    // Суммируем монеты за последние RATE_WINDOW мс
-    let total = 0;
-    for (let entry of gameData.coinHistory) {
-        total += entry.coins;
-    }
-    if (total > COIN_RATE_LIMIT) {
-        // Подозрительная активность
-        return true;
-    }
-    return false;
-}
-
-function addCoinRecord(amount) {
-    const now = Date.now();
-    gameData.coinHistory.push({ time: now, coins: amount });
-    // Если превысили лимит, баним
-    if (checkCoinRate()) {
-        banAccount('Слишком быстрый прирост монет (возможно, читерство)');
-    }
-}
-
-function checkLoginRate() {
-    const now = Date.now();
-    const last = gameData.lastLoginTime;
-    gameData.lastLoginTime = now;
-    if (last && (now - last) < MIN_LOGIN_INTERVAL) {
-        // Слишком частые входы
-        gameData.loginCount++;
-        if (gameData.loginCount > 3) {
-            banAccount('Слишком частые перезагрузки (авто-кликер?)');
-        }
-    } else {
-        gameData.loginCount = 0;
-    }
-}
-
-function banAccount(reason) {
-    if (gameData.banned) return;
-    gameData.banned = true;
-    gameData.banReason = reason || 'Подозрительная активность';
-    // Сохраняем в Firebase
-    if (currentUser) {
-        db.ref('users/' + currentUser.uid + '/banned').set(true);
-        db.ref('users/' + currentUser.uid + '/banReason').set(gameData.banReason);
-    }
-    saveGame();
-    showBanScreen();
-}
-
-function showBanScreen() {
-    // Скрываем всё, показываем бан
-    menuEl.style.display = 'none';
-    deviceSelectEl.style.display = 'none';
-    gameWrapper.style.display = 'none';
-    gameOverEl.style.display = 'none';
-    banScreen.style.display = 'flex';
-    // Останавливаем игру
-    gameRunning = false;
-    if (afkActive) stopAfk();
-}
-
-// ============================================================
 //  ЗАГРУЗКА / СОХРАНЕНИЕ
 // ============================================================
-function loadGame() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-        try {
-            const parsed = JSON.parse(raw);
-            Object.assign(gameData, parsed);
-            if (!gameData.ownedSkins) gameData.ownedSkins = [0];
-            if (!gameData.completedLevels) gameData.completedLevels = [];
-            if (gameData.coinHistory === undefined) gameData.coinHistory = [];
-            if (gameData.banned === undefined) gameData.banned = false;
-            if (gameData.warningShown === undefined) gameData.warningShown = false;
-        } catch(e) {}
-    }
-    if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
-    // Проверка на бан в локальном хранилище
-    if (gameData.banned) {
-        showBanScreen();
-    }
-}
-
-function saveGame() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameData));
-}
-
 function saveGameToFirebase() {
     if (!currentUser) return;
-    if (gameData.banned) {
-        // Если забанен, не сохраняем прогресс, но сохраняем флаг бана
-        db.ref('users/' + currentUser.uid + '/banned').set(true);
-        db.ref('users/' + currentUser.uid + '/banReason').set(gameData.banReason || 'Подозрительная активность');
-        return;
-    }
     const ref = db.ref('users/' + currentUser.uid);
     ref.set({
         maxLevel: gameData.maxLevel,
@@ -920,8 +442,7 @@ function saveGameToFirebase() {
         completedLevels: gameData.completedLevels,
         multLevel: gameData.multLevel,
         afkLevel: gameData.afkLevel,
-        banned: gameData.banned || false,
-        banReason: gameData.banReason || ''
+        banned: gameData.banned
     }).catch(err => console.warn('Ошибка сохранения:', err));
 }
 
@@ -931,12 +452,9 @@ function loadGameFromFirebase() {
     ref.once('value').then(snapshot => {
         const data = snapshot.val();
         if (data) {
-            // Проверка на бан в Firebase
             if (data.banned) {
                 gameData.banned = true;
-                gameData.banReason = data.banReason || 'Забанен администратором';
-                saveGame();
-                showBanScreen();
+                banAccount(data.banReason || 'Нарушение правил');
                 return;
             }
             gameData.maxLevel = data.maxLevel || 1;
@@ -947,11 +465,6 @@ function loadGameFromFirebase() {
             gameData.multLevel = data.multLevel || 0;
             gameData.afkLevel = data.afkLevel || 0;
             if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
-            // Если не было бана в Firebase, сбросим локальный бан (если был)
-            if (gameData.banned && !data.banned) {
-                gameData.banned = false;
-                gameData.banReason = '';
-            }
         } else {
             saveGameToFirebase();
         }
@@ -965,7 +478,7 @@ function loadGameFromFirebase() {
 }
 
 // ============================================================
-//  АУТЕНТИФИКАЦИЯ
+//  АУТЕНТИФИКАЦИЯ (без сохранения времени входа)
 // ============================================================
 function signInAnonymously() {
     auth.signInAnonymously()
@@ -999,6 +512,7 @@ function signInAnonymously() {
 //  ОБНОВЛЕНИЕ UI
 // ============================================================
 function updateUI() {
+    if (gameData.banned) return;
     if (userIdDisplay) userIdDisplay.textContent = gameData.userId || '--';
     if (coinDisplay) coinDisplay.textContent = gameData.coins;
     if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
@@ -1016,6 +530,7 @@ function setSyncStatus(ok) {
 //  МЕНЮ
 // ============================================================
 function buildMenu() {
+    if (gameData.banned) return;
     levelGrid.innerHTML = '';
     for (let i = 1; i <= TOTAL_LEVELS; i++) {
         const btn = document.createElement('button');
@@ -1048,6 +563,7 @@ function buildMenu() {
 //  МАГАЗИН
 // ============================================================
 function renderShop() {
+    if (gameData.banned) return;
     const grid = document.getElementById('skinGrid');
     grid.innerHTML = '';
     SKINS.forEach(skin => {
@@ -1119,6 +635,7 @@ function renderShop() {
 //  UI УЛУЧШЕНИЙ
 // ============================================================
 function updateUpgradeUI() {
+    if (gameData.banned) return;
     document.getElementById('multBonusDisplay').textContent = (gameData.multLevel * 0.2).toFixed(1);
     document.getElementById('multLevelDisplay').textContent = gameData.multLevel;
     document.getElementById('multCostDisplay').textContent = getMultUpgradeCost();
@@ -1130,6 +647,7 @@ function updateUpgradeUI() {
 }
 
 function buyMultUpgrade() {
+    if (gameData.banned) return;
     if (!canBuyMult()) return;
     const cost = getMultUpgradeCost();
     gameData.coins -= cost;
@@ -1141,6 +659,7 @@ function buyMultUpgrade() {
 }
 
 function buyAfkUpgrade() {
+    if (gameData.banned) return;
     if (!canBuyAfk()) return;
     const cost = getAfkUpgradeCost();
     gameData.coins -= cost;
@@ -1159,6 +678,7 @@ function buyAfkUpgrade() {
 //  ПЕРЕДАЧА МОНЕТ
 // ============================================================
 function transferCoins(targetId, amount) {
+    if (gameData.banned) return;
     if (!targetId || targetId.trim() === '') {
         showToast('Введите ID получателя');
         return;
@@ -1181,6 +701,10 @@ function transferCoins(targetId, amount) {
         .then(snapshot => {
             if (!snapshot.exists()) {
                 showToast('Игрок с таким ID не найден');
+                return;
+            }
+            if (snapshot.val().banned) {
+                showToast('Получатель заблокирован');
                 return;
             }
             gameData.coins -= amount;
@@ -1211,6 +735,7 @@ function transferCoins(targetId, amount) {
 //  AFK-ФАРМ
 // ============================================================
 function startAfk() {
+    if (gameData.banned) return;
     if (afkActive) return;
     afkActive = true;
     afkBtnElement.textContent = '⏳ AFK фарм ВКЛ';
@@ -1224,8 +749,8 @@ function startAfk() {
         updateAfkTimerDisplay();
         if (afkCountdown <= 0) {
             const reward = Math.round(5 * getTotalMultiplier());
+            if (checkCoinRate(reward)) return;
             gameData.coins += reward;
-            addCoinRecord(reward); // запись для защиты
             saveGameToFirebase();
             updateUI();
             showToast('+' + reward + ' 🪙 (AFK-фарм)');
@@ -1265,6 +790,16 @@ function startLevel(index) {
     if (index < 0 || index >= TOTAL_LEVELS) return;
     currentLevel = index;
     const level = LEVELS[index];
+    if (!level) {
+        console.error('Уровень не найден, перегенерируем');
+        LEVELS = generateLevels(TOTAL_LEVELS);
+        if (LEVELS.length <= index) {
+            showToast('Ошибка загрузки уровня');
+            return;
+        }
+        startLevel(index);
+        return;
+    }
     platforms = level.platforms.map(p => ({...p}));
     doorX = level.doorX;
     player.x = level.playerX; player.y = level.playerY;
@@ -1290,8 +825,7 @@ function startLevel(index) {
 }
 
 function update() {
-    if (!gameRunning || gameOverShown) return;
-    if (gameData.banned) { gameRunning = false; return; }
+    if (!gameRunning || gameOverShown || gameData.banned) return;
 
     if (keys.left) player.vx = -MOVE_SPEED;
     else if (keys.right) player.vx = MOVE_SPEED;
@@ -1346,8 +880,8 @@ function update() {
                 if (Math.sqrt(dx*dx + dy*dy) < c.radius + 14) {
                     c.collected = true;
                     const reward = Math.round(1 * mult);
+                    if (checkCoinRate(reward)) return;
                     gameData.coins += reward;
-                    addCoinRecord(reward); // запись для защиты
                     saveGameToFirebase();
                     updateUI();
                     showToast('+' + reward + ' 🪙 (собрано)');
@@ -1363,8 +897,8 @@ function update() {
         const levelNum = currentLevel + 1;
         const reward = 1 + (levelNum - 1) * 2;
         if (!gameData.completedLevels.includes(levelNum)) {
+            if (checkCoinRate(reward)) return;
             gameData.coins += reward;
-            addCoinRecord(reward);
             gameData.completedLevels.push(levelNum);
             saveGameToFirebase();
             showToast('🎉 Уровень ' + levelNum + ' пройден! +' + reward + ' 🪙');
@@ -1387,7 +921,7 @@ function restartLevel() {
 }
 
 // ============================================================
-//  ОТРИСОВКА ЗАСТАВКИ И ИГРЫ (без изменений)
+//  ОТРИСОВКА
 // ============================================================
 function drawIntro() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1635,9 +1169,13 @@ function draw() {
 }
 
 // ============================================================
-//  ЦИКЛ
+//  ГЛАВНЫЙ ЦИКЛ
 // ============================================================
 function gameLoop() {
+    if (gameData.banned) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
     if (introActive) {
         drawIntro();
         requestAnimationFrame(gameLoop);
@@ -1732,6 +1270,24 @@ function setupTouchControls() {
 // ============================================================
 //  ПОКАЗАТЬ ВЫБОР УСТРОЙСТВА
 // ============================================================
+let useMobileLayout = false;
+
+function loadDeviceMode() {
+    const saved = localStorage.getItem('deviceMode');
+    if (saved === 'phone') {
+        useMobileLayout = true;
+    } else if (saved === 'pc') {
+        useMobileLayout = false;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+function saveDeviceMode(mode) {
+    localStorage.setItem('deviceMode', mode);
+}
+
 function showDeviceSelect() {
     deviceSelectEl.style.display = 'flex';
     menuEl.style.display = 'none';
@@ -1750,7 +1306,6 @@ window.onload = function() {
     deviceSelectEl = document.getElementById('deviceSelect');
     gameWrapper = document.getElementById('gameWrapper');
     gameOverEl = document.getElementById('gameOver');
-    banScreen = document.getElementById('banScreen');
     shopEl = document.getElementById('shop');
     transferModal = document.getElementById('transferModal');
     upgradeModal = document.getElementById('upgradeModal');
@@ -1767,14 +1322,6 @@ window.onload = function() {
     touchRight = document.getElementById('touchRight');
     touchJump = document.getElementById('touchJump');
 
-    // Загружаем данные
-    loadGame();
-    // Проверка на бан
-    if (gameData.banned) {
-        showBanScreen();
-        // Но продолжаем выполнение, чтобы можно было показать бан экран
-    }
-
     const hasDeviceMode = loadDeviceMode();
     setupTouchControls();
 
@@ -1784,6 +1331,7 @@ window.onload = function() {
     document.getElementById('exitBtnMenu').addEventListener('click', () => { window.close(); });
     document.getElementById('exitBtn').addEventListener('click', () => { window.close(); });
     document.getElementById('shopBtn').addEventListener('click', () => {
+        if (gameData.banned) return;
         menuEl.style.display = 'none';
         shopEl.style.display = 'flex';
         renderShop();
@@ -1797,6 +1345,7 @@ window.onload = function() {
     afkBtnElement.addEventListener('click', toggleAfk);
 
     document.getElementById('upgradeBtn').addEventListener('click', () => {
+        if (gameData.banned) return;
         upgradeModal.style.display = 'flex';
         updateUpgradeUI();
     });
@@ -1810,6 +1359,7 @@ window.onload = function() {
     document.getElementById('buyAfkBtn').addEventListener('click', buyAfkUpgrade);
 
     document.getElementById('transferBtn').addEventListener('click', () => {
+        if (gameData.banned) return;
         transferModal.style.display = 'flex';
         document.getElementById('targetIdInput').value = '';
         document.getElementById('amountInput').value = '';
@@ -1821,6 +1371,7 @@ window.onload = function() {
         if (e.target === transferModal) transferModal.style.display = 'none';
     });
     document.getElementById('sendTransferBtn').addEventListener('click', () => {
+        if (gameData.banned) return;
         const target = document.getElementById('targetIdInput').value.trim();
         const amount = parseInt(document.getElementById('amountInput').value);
         transferCoins(target, amount);
@@ -1846,10 +1397,6 @@ window.onload = function() {
     function exitIntro() {
         if (introActive) {
             introActive = false;
-            if (gameData.banned) {
-                showBanScreen();
-                return;
-            }
             if (loadDeviceMode()) {
                 menuEl.style.display = 'flex';
                 deviceSelectEl.style.display = 'none';
@@ -1876,10 +1423,6 @@ window.onload = function() {
     transferModal.style.display = 'none';
     upgradeModal.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
-    // Если забанен – покажем экран бана, скрыв остальное
-    if (gameData.banned) {
-        showBanScreen();
-    }
 
     window._loopStarted = false;
     requestAnimationFrame(gameLoop);
@@ -1904,6 +1447,7 @@ function goToMenu() {
 }
 
 function resetProgress() {
+    if (gameData.banned) return;
     if (!confirm('Сбросить прогресс уровней?\nМонеты и скины останутся.')) return;
     gameData.maxLevel = 1;
     gameData.completedLevels = [];
@@ -1914,9 +1458,6 @@ function resetProgress() {
     updateUI();
     showToast('Прогресс уровней сброшен!');
 }
-
-// Проверяем скорость монет при запуске
-checkLoginRate();
 </script>
 </body>
 </html>
