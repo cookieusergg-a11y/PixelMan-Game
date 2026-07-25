@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>PixelMan</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (App + Auth + Database) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* все стили без изменений – смотри выше */
+        /* Все стили без изменений – оставляю как было */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; }
         #app {
@@ -219,7 +220,7 @@
 
 <script>
 // ============================================================
-//  FIREBASE CONFIG
+//  FIREBASE CONFIG (ваша)
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyC1yg9Up6LrfSt1VTHyBK_gvZ8058CSI6A",
@@ -233,13 +234,14 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
 
 // ============================================================
 //  КОНСТАНТЫ
 // ============================================================
 const TOTAL_LEVELS = 10;
-const STORAGE_KEY = 'pixelman_data';
+const STORAGE_KEY = 'pixelman_data'; // всё равно оставляем для локального кэша
 const GRAVITY = 0.5;
 const JUMP_FORCE = -9.0;
 const MOVE_SPEED = 3.2;
@@ -293,8 +295,9 @@ LEVELS.push(makeLevel([
 ], [{x:20,y:425},{x:130,y:370},{x:240,y:315},{x:350,y:260},{x:460,y:205},{x:570,y:260},{x:680,y:315},{x:790,y:425}], 20, 425, 780));
 
 // ============================================================
-//  СОСТОЯНИЕ ИГРЫ
+//  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ============================================================
+let currentUser = null;          // firebase User
 let gameData = {
     userId: '',
     maxLevel: 1,
@@ -324,9 +327,6 @@ let afkTimerElement;
 let afkBtnElement;
 let toastEl;
 
-// ============================================================
-//  ПЕРЕМЕННЫЕ ДЛЯ ЗАСТАВКИ
-// ============================================================
 let introActive = true;
 let introBlocks = [];
 let introSpeed = 3;
@@ -337,83 +337,95 @@ let introJumpTimer = 0;
 let introWalkTime = 0;
 
 // ============================================================
-//  ГЕНЕРАЦИЯ ID
+//  ГЕНЕРАЦИЯ ID (запасной, если Firebase не сработает)
 // ============================================================
 function generateUserId() {
     return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 }
 
 // ============================================================
-//  ЗАГРУЗКА / СОХРАНЕНИЕ (С ЛОГАМИ)
+//  ЗАГРУЗКА / СОХРАНЕНИЕ ДАННЫХ
 // ============================================================
-function loadGame() {
-    console.log('[loadGame] Загружаем данные из localStorage');
-    const raw = localStorage.getItem(STORAGE_KEY);
-    console.log('[loadGame] raw данные из localStorage:', raw);
-    if (raw) {
-        try {
-            const parsed = JSON.parse(raw);
-            console.log('[loadGame] распарсенные данные:', parsed);
-            if (parsed.userId) {
-                gameData.userId = parsed.userId;
-                console.log('[loadGame] userId найден:', gameData.userId);
-            }
-            if (parsed.maxLevel !== undefined) gameData.maxLevel = parsed.maxLevel;
-            if (parsed.coins !== undefined) gameData.coins = parsed.coins;
-            if (parsed.ownedSkins) gameData.ownedSkins = parsed.ownedSkins;
-            if (parsed.activeSkin !== undefined) gameData.activeSkin = parsed.activeSkin;
-            if (parsed.completedLevels) gameData.completedLevels = parsed.completedLevels;
+function saveGameToFirebase() {
+    if (!currentUser) return;
+    const ref = db.ref('users/' + currentUser.uid);
+    ref.set({
+        maxLevel: gameData.maxLevel,
+        coins: gameData.coins,
+        ownedSkins: gameData.ownedSkins,
+        activeSkin: gameData.activeSkin,
+        completedLevels: gameData.completedLevels
+    }).catch(err => console.warn('Ошибка сохранения:', err));
+}
+
+function loadGameFromFirebase() {
+    if (!currentUser) return;
+    const ref = db.ref('users/' + currentUser.uid);
+    ref.once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (data) {
+            gameData.maxLevel = data.maxLevel || 1;
+            gameData.coins = data.coins || 0;
+            gameData.ownedSkins = data.ownedSkins || [0];
+            gameData.activeSkin = data.activeSkin || 0;
+            gameData.completedLevels = data.completedLevels || [];
             if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
-        } catch(e) {
-            console.error('[loadGame] Ошибка парсинга:', e);
+        } else {
+            // Нет данных – создаём запись
+            saveGameToFirebase();
         }
-    } else {
-        console.log('[loadGame] localStorage пуст');
-    }
-    console.log('[loadGame] после загрузки userId:', gameData.userId);
-    if (!gameData.userId) {
-        console.log('[loadGame] userId отсутствует, генерируем новый');
-        gameData.userId = generateUserId();
-        saveGame();
-        console.log('[loadGame] новый userId сгенерирован и сохранён:', gameData.userId);
-    }
-    if (!gameData.completedLevels) gameData.completedLevels = [];
-}
-
-function saveGame() {
-    console.log('[saveGame] сохраняем данные:', gameData);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameData));
-    console.log('[saveGame] сохранено в localStorage');
+        updateUI();
+        setSyncStatus(true);
+    }).catch(err => {
+        console.warn('Ошибка загрузки из Firebase:', err);
+        setSyncStatus(false);
+    });
 }
 
 // ============================================================
-//  FIREBASE – СИНХРОНИЗАЦИЯ БАЛАНСА
+//  АУТЕНТИФИКАЦИЯ FIREBASE (анонимный вход)
 // ============================================================
-function syncCoinsToFirebase() {
-    if (!gameData.userId) return;
-    db.ref('users/' + gameData.userId + '/coins').set(gameData.coins)
-        .catch(err => console.warn('Firebase write error:', err));
-}
-
-function loadCoinsFromFirebase() {
-    if (!gameData.userId) return;
-    db.ref('users/' + gameData.userId + '/coins').once('value')
-        .then(snapshot => {
-            const val = snapshot.val();
-            if (val !== null && val !== undefined) {
-                gameData.coins = val;
-                saveGame();
-                updateUI();
-                setSyncStatus(true);
-            } else {
-                syncCoinsToFirebase();
-                setSyncStatus(true);
-            }
+function signInAnonymously() {
+    auth.signInAnonymously()
+        .then(userCredential => {
+            currentUser = userCredential.user;
+            gameData.userId = currentUser.uid;
+            userIdDisplay.textContent = gameData.userId;
+            // Загружаем данные из Firebase
+            loadGameFromFirebase();
+            // Сохраняем userId в localStorage на всякий случай
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: gameData.userId }));
+            console.log('Анонимный вход выполнен, UID:', currentUser.uid);
         })
-        .catch(err => {
-            console.warn('Firebase read error:', err);
-            setSyncStatus(false);
+        .catch(error => {
+            console.error('Ошибка анонимного входа:', error);
+            // Если Firebase Auth не работает – используем локальный ID
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.userId) gameData.userId = parsed.userId;
+                } catch(e) {}
+            }
+            if (!gameData.userId) {
+                gameData.userId = generateUserId();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: gameData.userId }));
+            }
+            userIdDisplay.textContent = gameData.userId;
+            // При ошибке пытаемся загрузить данные из локального хранилища
+            // (просто оставляем как есть)
+            updateUI();
         });
+}
+
+// ============================================================
+//  ОБНОВЛЕНИЕ UI
+// ============================================================
+function updateUI() {
+    if (userIdDisplay) userIdDisplay.textContent = gameData.userId || '--';
+    if (coinDisplay) coinDisplay.textContent = gameData.coins;
+    if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
+    buildMenu();
 }
 
 function setSyncStatus(ok) {
@@ -421,16 +433,6 @@ function setSyncStatus(ok) {
         syncStatus.textContent = ok ? '● синхр.' : '⚠ офлайн';
         syncStatus.style.color = ok ? '#8f8' : '#f88';
     }
-}
-
-// ============================================================
-//  ОБНОВЛЕНИЕ UI
-// ============================================================
-function updateUI() {
-    if (userIdDisplay) userIdDisplay.textContent = gameData.userId;
-    if (coinDisplay) coinDisplay.textContent = gameData.coins;
-    if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
-    buildMenu();
 }
 
 // ============================================================
@@ -459,7 +461,7 @@ function buildMenu() {
 }
 
 // ============================================================
-//  МАГАЗИН
+//  МАГАЗИН (с сохранением в Firebase)
 // ============================================================
 function renderShop() {
     const grid = document.getElementById('skinGrid');
@@ -497,7 +499,7 @@ function renderShop() {
             btn.className = 'select';
             btn.addEventListener('click', () => {
                 gameData.activeSkin = skin.id;
-                saveGame();
+                saveGameToFirebase();
                 renderShop();
                 updateUI();
             });
@@ -510,8 +512,7 @@ function renderShop() {
                 if (gameData.coins >= skin.price) {
                     gameData.coins -= skin.price;
                     gameData.ownedSkins.push(skin.id);
-                    saveGame();
-                    syncCoinsToFirebase();
+                    saveGameToFirebase();
                     renderShop();
                     updateUI();
                     showToast('Куплен скин ' + skin.name);
@@ -524,7 +525,7 @@ function renderShop() {
 }
 
 // ============================================================
-//  ПЕРЕДАЧА МОНЕТ
+//  ПЕРЕДАЧА МОНЕТ (с проверкой через Firebase)
 // ============================================================
 function transferCoins(targetId, amount) {
     if (!targetId || targetId.trim() === '') {
@@ -545,32 +546,33 @@ function transferCoins(targetId, amount) {
         return;
     }
 
-    db.ref('users/' + targetId + '/coins').once('value')
+    // Проверяем, существует ли пользователь с таким ID (сейчас это UID из Firebase Auth)
+    db.ref('users/' + targetId).once('value')
         .then(snapshot => {
-            const targetCoins = snapshot.val();
-            if (targetCoins === null || targetCoins === undefined) {
+            if (!snapshot.exists()) {
                 showToast('Игрок с таким ID не найден');
                 return;
             }
+            // Снимаем монеты у отправителя
             gameData.coins -= amount;
-            saveGame();
-            syncCoinsToFirebase();
-            const newTargetCoins = targetCoins + amount;
-            db.ref('users/' + targetId + '/coins').set(newTargetCoins)
-                .then(() => {
-                    showToast('Передача выполнена! Отправлено ' + amount + ' монет');
-                    updateUI();
-                    document.getElementById('targetIdInput').value = '';
-                    document.getElementById('amountInput').value = '';
-                    transferModal.style.display = 'none';
-                })
-                .catch(err => {
-                    gameData.coins += amount;
-                    saveGame();
-                    syncCoinsToFirebase();
-                    showToast('Ошибка передачи, попробуйте позже');
-                    console.error(err);
-                });
+            saveGameToFirebase();
+            // Добавляем получателю
+            const targetRef = db.ref('users/' + targetId);
+            targetRef.child('coins').transaction((currentCoins) => {
+                return (currentCoins || 0) + amount;
+            }).then(() => {
+                showToast('Передача выполнена! Отправлено ' + amount + ' монет');
+                updateUI();
+                document.getElementById('targetIdInput').value = '';
+                document.getElementById('amountInput').value = '';
+                transferModal.style.display = 'none';
+            }).catch(err => {
+                // откат, если не удалось записать получателю
+                gameData.coins += amount;
+                saveGameToFirebase();
+                showToast('Ошибка передачи, попробуйте позже');
+                console.error(err);
+            });
         })
         .catch(err => {
             showToast('Ошибка проверки получателя');
@@ -595,8 +597,7 @@ function startAfk() {
         if (afkCountdown <= 0) {
             const reward = 5;
             gameData.coins += reward;
-            saveGame();
-            syncCoinsToFirebase();
+            saveGameToFirebase();
             updateUI();
             showToast('+' + reward + ' 🪙 (AFK-фарм)');
             afkCountdown = 120;
@@ -628,7 +629,7 @@ function updateAfkTimerDisplay() {
 }
 
 // ============================================================
-//  ИГРОВАЯ ЛОГИКА
+//  ИГРОВАЯ ЛОГИКА (без изменений)
 // ============================================================
 function startLevel(index) {
     if (index < 0 || index >= TOTAL_LEVELS) return;
@@ -707,8 +708,7 @@ function update() {
                 c.collected = true;
                 const reward = 1;
                 gameData.coins += reward;
-                saveGame();
-                syncCoinsToFirebase();
+                saveGameToFirebase();
                 updateUI();
                 showToast('+1 🪙 (собрано)');
             }
@@ -724,14 +724,13 @@ function update() {
             const reward = COIN_REWARDS[currentLevel];
             gameData.coins += reward;
             gameData.completedLevels.push(levelNum);
-            saveGame();
-            syncCoinsToFirebase();
+            saveGameToFirebase();
             showToast('🎉 Уровень ' + levelNum + ' пройден! +' + reward + ' 🪙');
         } else {
             showToast('✅ Уровень ' + levelNum + ' пройден (повторно)');
         }
         if (levelNum > gameData.maxLevel) gameData.maxLevel = levelNum;
-        saveGame();
+        saveGameToFirebase();
         if (levelNum >= TOTAL_LEVELS) {
             showGameOver();
         } else {
@@ -1080,13 +1079,18 @@ window.onload = function() {
     afkBtnElement = document.getElementById('afkBtn');
     afkTimerElement = document.getElementById('afkTimer');
 
-    console.log('=== ЗАПУСК ИГРЫ ===');
-    loadGame();
-    updateUI();
-    renderShop();
+    // Сначала показываем заставку, меню скрыто
+    menuEl.style.display = 'none';
+    gameWrapper.style.display = 'block';
+    gameOverEl.style.display = 'none';
+    shopEl.style.display = 'none';
+    transferModal.style.display = 'none';
+    document.getElementById('backToMenu').style.display = 'none';
 
-    loadCoinsFromFirebase();
+    // Запускаем анонимный вход Firebase
+    signInAnonymously();
 
+    // Обработчики UI
     document.getElementById('backToMenu').addEventListener('click', goToMenu);
     document.getElementById('exitBtnMenu').addEventListener('click', () => { window.close(); });
     document.getElementById('exitBtn').addEventListener('click', () => { window.close(); });
@@ -1120,6 +1124,7 @@ window.onload = function() {
         transferCoins(target, amount);
     });
 
+    // Выход из заставки по клику
     function exitIntro() {
         if (introActive) {
             introActive = false;
@@ -1131,16 +1136,8 @@ window.onload = function() {
             document.getElementById('backToMenu').style.display = 'none';
         }
     }
-
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
-
-    menuEl.style.display = 'none';
-    gameWrapper.style.display = 'block';
-    gameOverEl.style.display = 'none';
-    shopEl.style.display = 'none';
-    transferModal.style.display = 'none';
-    document.getElementById('backToMenu').style.display = 'none';
 
     window._loopStarted = false;
     requestAnimationFrame(gameLoop);
@@ -1165,7 +1162,7 @@ function resetProgress() {
     if (!confirm('Сбросить прогресс уровней?\nМонеты и скины останутся.')) return;
     gameData.maxLevel = 1;
     gameData.completedLevels = [];
-    saveGame();
+    saveGameToFirebase();
     if (gameRunning || gameOverShown) {
         goToMenu();
     }
