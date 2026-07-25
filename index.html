@@ -21,7 +21,6 @@
             max-width: 820px;
             margin: 0 auto;
         }
-        /* --- Холст --- */
         canvas {
             display: block;
             margin: 0 auto;
@@ -32,8 +31,8 @@
             aspect-ratio: 8 / 5;
             cursor: pointer;
             touch-action: none;
+            min-height: 300px;
         }
-        /* --- Меню --- */
         .menu { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 20px; min-width: 280px; width: 100%; position: relative; overflow: visible; }
         .menu .version { position: absolute; top: 10px; right: 20px; font-family: 'Press Start 2P', cursive; color: #666; font-size: 12px; opacity: 0.6; }
         .menu h1 { font-family: 'Press Start 2P', cursive; font-size: clamp(24px, 6vw, 48px); color: #fff; text-shadow: 0 0 20px #5af, 0 0 40px #3af; letter-spacing: 4px; margin-bottom: 5px; text-align: center; }
@@ -65,7 +64,6 @@
         .afk-btn.active { background: #6a3a2a; }
         .afk-btn:hover { transform: scale(1.05); }
         .afk-timer { color: #8af; font-size: clamp(12px, 2vw, 16px); min-width: 60px; text-align: center; font-family: 'Press Start 2P', cursive; }
-        /* --- Модалки --- */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #12122a; padding: 30px; border-radius: 16px; min-width: 280px; max-width: 90%; border: 2px solid #3a3a7a; display: flex; flex-direction: column; gap: 20px; max-height: 90vh; overflow-y: auto; }
         .modal-content h2 { color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(16px, 4vw, 24px); text-align: center; }
@@ -116,38 +114,23 @@
         #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); z-index: 10; }
         #backToMenu:hover { background: #555; }
 
-        /* --- Игровой контейнер (всегда виден, но кнопки скрыты) --- */
         .game-wrapper {
             display: block;
             width: 100%;
             position: relative;
             background: transparent;
         }
-        /* Для мобильного режима – вертикальная раскладка */
         .game-wrapper.mobile {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 10px;
         }
-        .game-wrapper.mobile canvas {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 8 / 5;
-        }
-        /* Для ПК – просто блок, без flex */
         .game-wrapper.pc {
             display: block;
         }
-        .game-wrapper.pc canvas {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* --- Сенсорные кнопки (всегда скрыты, показываются только в мобильном режиме при active) --- */
         .touch-controls {
-            display: none !important; /* по умолчанию скрыты */
+            display: none !important;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
@@ -160,66 +143,28 @@
         .touch-controls.active {
             display: flex !important;
         }
-        .touch-controls .left-right {
-            display: flex;
-            gap: 15px;
-            flex: 1;
-            justify-content: flex-start;
-        }
+        .touch-controls .left-right { display: flex; gap: 15px; flex: 1; justify-content: flex-start; }
         .touch-controls .left-right button,
         .touch-controls .jump-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.4);
-            background: rgba(255,255,255,0.2);
-            color: #fff;
-            font-size: 28px;
-            backdrop-filter: blur(4px);
-            touch-action: manipulation;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            pointer-events: auto;
+            width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.2); color: #fff; font-size: 28px;
+            backdrop-filter: blur(4px); touch-action: manipulation; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            user-select: none; -webkit-tap-highlight-color: transparent; pointer-events: auto;
         }
         .touch-controls .left-right button:active,
-        .touch-controls .jump-btn:active {
-            background: rgba(255,255,255,0.5);
-        }
+        .touch-controls .jump-btn:active { background: rgba(255,255,255,0.5); }
         .touch-controls .jump-btn {
-            width: 80px;
-            height: 80px;
-            background: rgba(255,215,0,0.35);
-            border-color: rgba(255,215,0,0.5);
-            font-size: 32px;
-            font-weight: bold;
-            box-shadow: 0 0 30px rgba(255,215,0,0.4);
-            flex-shrink: 0;
+            width: 80px; height: 80px; background: rgba(255,215,0,0.35);
+            border-color: rgba(255,215,0,0.5); font-size: 32px; font-weight: bold;
+            box-shadow: 0 0 30px rgba(255,215,0,0.4); flex-shrink: 0;
         }
         @media (max-width: 480px) {
-            .touch-controls .left-right button {
-                width: 60px;
-                height: 60px;
-                font-size: 24px;
-            }
-            .touch-controls .jump-btn {
-                width: 70px;
-                height: 70px;
-                font-size: 28px;
-            }
-            .touch-controls {
-                padding: 5px 2px;
-                gap: 10px;
-            }
-            .touch-controls .left-right {
-                gap: 10px;
-            }
+            .touch-controls .left-right button { width: 60px; height: 60px; font-size: 24px; }
+            .touch-controls .jump-btn { width: 70px; height: 70px; font-size: 28px; }
+            .touch-controls { padding: 5px 2px; gap: 10px; }
+            .touch-controls .left-right { gap: 10px; }
         }
-
-        /* --- Тосты --- */
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: clamp(12px, 2.5vw, 18px); border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-family: 'Press Start 2P', cursive; }
         .toast.show { opacity: 1; }
     </style>
@@ -228,7 +173,7 @@
 <div id="app">
     <!-- Меню -->
     <div class="menu" id="menu">
-        <div class="version">v3.8</div>
+        <div class="version">v3.9</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -383,7 +328,7 @@ const MAX_AFK_LEVEL = 10;
 const ADMIN_UIDS = ['KDUCqREFAPM8lJxbHT7FzcVjXcm2', 'PTeDx5viMvNizIzJgKVraXtqCeC3'];
 
 // ============================================================
-//  СКИНЫ (15 штук)
+//  СКИНЫ
 // ============================================================
 const SKINS = [
     { id:0, name:'Белая', color:'#ffffff', price:0, multiplier:1 },
@@ -404,7 +349,7 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (усложнённая)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ
 // ============================================================
 function generateLevels(count) {
     const levels = [];
@@ -510,7 +455,7 @@ let useMobileLayout = false;
 let isAdmin = false;
 
 // ============================================================
-//  АНТИ-ЧИТ (ПОРОГ 100 МЛН ЗА 3 СЕКУНДЫ, АДМИНЫ НЕ БАНЯТСЯ)
+//  АНТИ-ЧИТ (100 млн за 3 сек, админы защищены)
 // ============================================================
 let coinHistory = [];
 let lastWarningTime = 0;
@@ -553,7 +498,7 @@ function banAccount(reason) {
     gameRunning = false;
     gameOverShown = false;
     menuEl.style.display = 'none';
-    gameWrapper.classList.remove('mobile', 'pc');
+    touchControls.classList.remove('active');
     document.body.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:#0a0a1a; color:#fff; font-family:'Press Start 2P', cursive; text-align:center; padding:20px;">
             <h1 style="color:#ff4444;">🚫 АККАУНТ ЗАБЛОКИРОВАН</h1>
@@ -721,10 +666,12 @@ function signInAnonymously() {
             }
             userIdDisplay.textContent = gameData.userId;
             updateUI();
+            // Если ошибка, но introActive ещё true, покажем меню, чтобы не зависнуть
             if (introActive) {
                 introActive = false;
                 menuEl.style.display = 'flex';
                 gameWrapper.classList.remove('mobile', 'pc');
+                touchControls.classList.remove('active');
             }
         });
 }
@@ -1007,14 +954,14 @@ function startLevel(index) {
     gameOverEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'block';
 
-    // Устанавливаем класс для game-wrapper в зависимости от режима
-    gameWrapper.classList.remove('pc', 'mobile');
+    // Устанавливаем класс для game-wrapper
+    gameWrapper.classList.remove('mobile', 'pc');
     if (useMobileLayout) {
         gameWrapper.classList.add('mobile');
-        touchControls.classList.add('active'); // показываем кнопки
+        touchControls.classList.add('active');
     } else {
         gameWrapper.classList.add('pc');
-        touchControls.classList.remove('active'); // скрываем кнопки
+        touchControls.classList.remove('active');
     }
 
     keys = {left:false, right:false, jump:false};
