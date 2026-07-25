@@ -2,32 +2,43 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PixelMan</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Firebase SDK (App + Auth + Database) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* Все стили без изменений – оставляю как было */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { 
+            background: #0a0a1a; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            font-family: 'Segoe UI', Arial, sans-serif;
+            touch-action: manipulation;
+        }
         #app {
             background: #12122a;
             border-radius: 16px;
             padding: 16px;
             box-shadow: 0 0 40px #2a2a6a;
             position: relative;
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
         }
         canvas {
             display: block;
             margin: 0 auto;
             background: #1a1a3a;
             border-radius: 10px;
-            width: 800px;
-            height: 500px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 8 / 5;
             cursor: pointer;
+            touch-action: none;
             position: relative;
             z-index: 1;
         }
@@ -37,47 +48,77 @@
             align-items: center;
             gap: 14px;
             padding: 20px;
-            min-width: 400px;
+            min-width: 280px;
+            width: 100%;
         }
         .menu h1 {
             font-family: 'Press Start 2P', cursive;
-            font-size: 32px;
+            font-size: clamp(24px, 6vw, 48px);
             color: #fff;
             text-shadow: 0 0 20px #5af, 0 0 40px #3af;
             letter-spacing: 4px;
             margin-bottom: 5px;
+            text-align: center;
         }
         .menu .profile {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             width: 100%;
             max-width: 420px;
             color: #aaa;
             font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
+            font-size: clamp(10px, 2.5vw, 14px);
             background: #1a1a3a;
             padding: 8px 16px;
             border-radius: 30px;
             border: 1px solid #3a3a6a;
+            gap: 5px;
         }
         .menu .profile .id { color: #8af; }
         .menu .profile .coins { color: #ffd700; }
         .menu .profile .sync-status { color: #8f8; font-size: 10px; margin-left: 10px; }
-        .level-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; width: 100%; max-width: 420px; }
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 420px;
+        }
         .level-btn {
-            padding: 12px 0; font-size: 18px; font-weight: bold; border: none; border-radius: 8px;
-            background: #2a2a4a; color: #888; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #00000066;
-            font-family: 'Press Start 2P', cursive; font-size: 14px;
+            padding: 12px 0;
+            font-size: clamp(12px, 2vw, 18px);
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            background: #2a2a4a;
+            color: #888;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 0 #00000066;
+            font-family: 'Press Start 2P', cursive;
         }
         .level-btn.unlocked { background: #3a7eb5; color: #fff; box-shadow: 0 4px 0 #1f4a6e; }
         .level-btn.unlocked:hover { background: #4a9ed5; transform: scale(1.05); }
         .level-btn.locked { background: #2a2a3a; color: #555; cursor: not-allowed; opacity: 0.5; }
         .level-btn.completed { background: #4a8a5a; color: #cfc; box-shadow: 0 4px 0 #2a5a3a; }
-        .menu-actions { display: flex; gap: 12px; margin-top: 5px; flex-wrap: wrap; justify-content: center; }
+        .menu-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
         .menu-actions button {
-            padding: 10px 20px; font-size: 14px; border: none; border-radius: 30px;
-            background: #2a2a5a; color: #fff; cursor: pointer; transition: 0.2s;
-            font-family: 'Press Start 2P', cursive; font-size: 11px;
+            padding: 10px 20px;
+            font-size: clamp(10px, 2vw, 14px);
+            border: none;
+            border-radius: 30px;
+            background: #2a2a5a;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Press Start 2P', cursive;
         }
         .menu-actions button:hover { background: #3a3a7a; transform: scale(1.03); }
         .menu-actions .shop-btn { background: #8a6a2a; }
@@ -86,85 +127,261 @@
         .menu-actions .reset-btn:hover { background: #8a3a3a; }
         .menu-actions .transfer-btn { background: #2a6a6a; }
         .menu-actions .transfer-btn:hover { background: #3a8a8a; }
+        .menu-actions .upgrade-btn { background: #4a2a6a; }
+        .menu-actions .upgrade-btn:hover { background: #6a3a8a; }
         .afk-area {
-            display: flex; align-items: center; gap: 15px; background: #1a1a3a; padding: 8px 20px; border-radius: 40px; border: 1px solid #4a4a7a;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #1a1a3a;
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1px solid #4a4a7a;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .afk-btn {
-            background: #2a6a3a; color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-size: 16px; cursor: pointer;
-            transition: 0.2s; font-weight: bold; font-family: 'Press Start 2P', cursive; font-size: 12px;
+            background: #2a6a3a;
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: clamp(10px, 2vw, 16px);
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+            font-family: 'Press Start 2P', cursive;
         }
         .afk-btn.active { background: #6a3a2a; }
         .afk-btn:hover { transform: scale(1.05); }
-        .afk-timer { color: #8af; font-size: 16px; min-width: 60px; text-align: center; font-family: 'Press Start 2P', cursive; font-size: 14px; }
+        .afk-timer {
+            color: #8af;
+            font-size: clamp(12px, 2vw, 16px);
+            min-width: 60px;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+        }
         .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
         .modal-content {
-            background: #12122a; padding: 30px; border-radius: 16px; min-width: 320px;
-            border: 2px solid #3a3a7a; display: flex; flex-direction: column; gap: 20px;
+            background: #12122a;
+            padding: 30px;
+            border-radius: 16px;
+            min-width: 280px;
+            max-width: 90%;
+            border: 2px solid #3a3a7a;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        .modal-content h2 { color: #fff; font-family: 'Press Start 2P', cursive; font-size: 20px; text-align: center; }
-        .modal-content label { color: #ccc; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        .modal-content h2 { color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(16px, 4vw, 24px); text-align: center; }
+        .modal-content label { color: #ccc; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); }
         .modal-content input {
-            padding: 10px; border-radius: 8px; border: 1px solid #3a3a6a; background: #1a1a3a; color: #fff;
-            font-family: 'Press Start 2P', cursive; font-size: 14px; width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #3a3a6a;
+            background: #1a1a3a;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(12px, 2.5vw, 16px);
+            width: 100%;
         }
         .modal-content .modal-actions { display: flex; gap: 15px; justify-content: center; }
         .modal-content .modal-actions button {
-            padding: 10px 24px; border: none; border-radius: 20px;
-            font-family: 'Press Start 2P', cursive; font-size: 12px; cursor: pointer;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(10px, 2vw, 14px);
+            cursor: pointer;
         }
         .modal-content .modal-actions .send-btn { background: #2a8a3a; color: #fff; }
         .modal-content .modal-actions .send-btn:hover { background: #3aaa4a; }
         .modal-content .modal-actions .cancel-btn { background: #633; color: #fff; }
         .modal-content .modal-actions .cancel-btn:hover { background: #833; }
-        #gameOver {
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            background: #000; width: 800px; height: 500px; border-radius: 10px; color: #fff; text-align: center;
+        .upgrade-item {
+            background: #1a1a3a;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        #gameOver h2 { font-size: 48px; letter-spacing: 4px; margin-bottom: 10px; font-family: 'Press Start 2P', cursive; }
-        #gameOver p { font-size: 20px; opacity: 0.5; margin-bottom: 40px; font-family: 'Press Start 2P', cursive; font-size: 16px; }
-        #gameOver button { padding: 12px 40px; font-size: 22px; background: #333; color: #fff; border: 1px solid #555; border-radius: 30px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 16px; }
+        .upgrade-item .label { color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(12px, 2.5vw, 16px); }
+        .upgrade-item .info { color: #aaa; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); display: flex; justify-content: space-between; }
+        .upgrade-item button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: #3a7eb5;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(10px, 2vw, 14px);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .upgrade-item button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .upgrade-item button:hover:not(:disabled) { background: #4a9ed5; }
+        #gameOver {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            width: 100%;
+            aspect-ratio: 8/5;
+            border-radius: 10px;
+            color: #fff;
+            text-align: center;
+        }
+        #gameOver h2 { font-size: clamp(28px, 8vw, 56px); letter-spacing: 4px; margin-bottom: 10px; font-family: 'Press Start 2P', cursive; }
+        #gameOver p { font-size: clamp(14px, 3vw, 24px); opacity: 0.5; margin-bottom: 40px; font-family: 'Press Start 2P', cursive; }
+        #gameOver button { padding: 12px 40px; font-size: clamp(16px, 3vw, 28px); background: #333; color: #fff; border: 1px solid #555; border-radius: 30px; cursor: pointer; font-family: 'Press Start 2P', cursive; }
         #gameOver button:hover { background: #555; }
         .shop {
-            display: none; flex-direction: column; align-items: center; gap: 15px; padding: 20px;
-            background: #0d0d22; border-radius: 12px; min-width: 400px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #0d0d22;
+            border-radius: 12px;
+            min-width: 280px;
+            width: 100%;
         }
-        .shop h2 { color: #ffd700; font-size: 26px; font-family: 'Press Start 2P', cursive; font-size: 20px; }
-        .shop .close-shop { background: #633; color: #fff; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        .shop h2 { color: #ffd700; font-size: clamp(18px, 4vw, 28px); font-family: 'Press Start 2P', cursive; }
+        .shop .close-shop { background: #633; color: #fff; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); }
         .shop-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; width: 100%; max-width: 420px; }
         .skin-card {
-            background: #1a1a3a; border-radius: 12px; padding: 12px; text-align: center; color: #fff;
-            border: 2px solid transparent; transition: 0.2s;
+            background: #1a1a3a;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            color: #fff;
+            border: 2px solid transparent;
+            transition: 0.2s;
         }
         .skin-card.active { border-color: #ffd700; box-shadow: 0 0 20px #ffd70055; }
         .skin-card .color-preview { display: inline-block; width: 40px; height: 40px; border-radius: 50%; margin-bottom: 6px; border: 1px solid #888; }
-        .skin-card .skin-name { font-size: 14px; margin-bottom: 4px; font-family: 'Press Start 2P', cursive; font-size: 12px; }
-        .skin-card .skin-price { font-size: 12px; color: #ffd700; font-family: 'Press Start 2P', cursive; font-size: 10px; }
-        .skin-card button { margin-top: 8px; padding: 4px 12px; border: none; border-radius: 12px; cursor: pointer; background: #3a7eb5; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 10px; }
+        .skin-card .skin-name { font-size: clamp(10px, 2vw, 14px); font-family: 'Press Start 2P', cursive; }
+        .skin-card .skin-price { font-size: clamp(8px, 1.5vw, 12px); color: #ffd700; font-family: 'Press Start 2P', cursive; }
+        .skin-card .skin-multiplier { font-size: clamp(8px, 1.5vw, 12px); color: #8af; font-family: 'Press Start 2P', cursive; }
+        .skin-card button { margin-top: 8px; padding: 4px 12px; border: none; border-radius: 12px; cursor: pointer; background: #3a7eb5; color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(8px, 1.5vw, 12px); }
         .skin-card button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .skin-card button.buy { background: #7a8a2a; }
         .skin-card button.select { background: #3a7eb5; }
         .skin-card button.active-btn { background: #4a8a5a; }
-        #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: 12px; z-index: 10; }
+        #backToMenu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 6px 14px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(10px, 2vw, 14px);
+            z-index: 10;
+        }
         #backToMenu:hover { background: #555; }
         .game-wrapper {
             position: relative;
             display: block;
         }
-        @media (max-width:860px){ canvas, #gameOver { width:100%; height:auto; aspect-ratio:8/5; } .menu, .shop { min-width:unset; width:90%; } }
+        .touch-controls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            padding: 0 10px;
+            z-index: 5;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .touch-controls .left-right {
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+        .touch-controls .left-right button,
+        .touch-controls .jump-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 24px;
+            backdrop-filter: blur(4px);
+            touch-action: manipulation;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .touch-controls .left-right button:active,
+        .touch-controls .jump-btn:active {
+            background: rgba(255,255,255,0.35);
+        }
+        .touch-controls .jump-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,200,50,0.25);
+            border-color: rgba(255,200,50,0.5);
+            font-size: 28px;
+            margin-right: 10px;
+        }
+        @media (max-width: 600px) {
+            .touch-controls .left-right button {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            .touch-controls .jump-btn {
+                width: 65px;
+                height: 65px;
+                font-size: 22px;
+            }
+        }
         .toast {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: 18px;
-            border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none;
-            font-family: 'Press Start 2P', cursive; font-size: 14px;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a2a4a;
+            color: #ffd700;
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-size: clamp(12px, 2.5vw, 18px);
+            border: 1px solid #ffd70055;
+            box-shadow: 0 0 30px #000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            font-family: 'Press Start 2P', cursive;
         }
         .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 <div id="app">
+    <!-- Меню -->
     <div class="menu" id="menu">
         <h1>PixelMan</h1>
         <div class="profile">
@@ -175,6 +392,7 @@
         <div class="level-grid" id="levelGrid"></div>
         <div class="menu-actions">
             <button class="shop-btn" id="shopBtn">🏪 Магазин</button>
+            <button class="upgrade-btn" id="upgradeBtn">⬆ Улучшения</button>
             <button class="transfer-btn" id="transferBtn">📤 Передать</button>
             <button class="reset-btn" id="resetBtn">🔄 Заново (уровни)</button>
             <button id="exitBtnMenu">🚪 Выйти</button>
@@ -185,12 +403,34 @@
         </div>
     </div>
 
+    <!-- Магазин -->
     <div class="shop" id="shop">
         <h2>🏪 Магазин скинов</h2>
         <div class="shop-grid" id="skinGrid"></div>
         <button class="close-shop" id="closeShop">Закрыть</button>
     </div>
 
+    <!-- Модалка улучшений -->
+    <div class="modal" id="upgradeModal">
+        <div class="modal-content">
+            <h2>⬆ Улучшения</h2>
+            <div class="upgrade-item">
+                <div class="label">Множитель монет</div>
+                <div class="info"><span>Текущий бонус: +<span id="multBonusDisplay">0</span></span><span>Уровень: <span id="multLevelDisplay">0</span></span></div>
+                <div class="info"><span>След. стоимость: <span id="multCostDisplay">100</span> 🪙</span><span>Макс: 10 ур.</span></div>
+                <button id="buyMultBtn">Купить</button>
+            </div>
+            <div class="upgrade-item">
+                <div class="label">Ускорение AFK</div>
+                <div class="info"><span>Интервал: <span id="afkIntervalDisplay">120</span>с</span><span>Уровень: <span id="afkLevelDisplay">0</span></span></div>
+                <div class="info"><span>След. стоимость: <span id="afkCostDisplay">100</span> 🪙</span><span>Мин: 20с</span></div>
+                <button id="buyAfkBtn">Купить</button>
+            </div>
+            <button class="close-shop" id="closeUpgrade">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Модалка передачи -->
     <div class="modal" id="transferModal">
         <div class="modal-content">
             <h2>📤 Передача монет</h2>
@@ -205,11 +445,20 @@
         </div>
     </div>
 
+    <!-- Игровой контейнер -->
     <div class="game-wrapper" id="gameWrapper">
         <canvas id="gameCanvas" width="800" height="500"></canvas>
         <button id="backToMenu">← Меню</button>
+        <div class="touch-controls" id="touchControls">
+            <div class="left-right">
+                <button id="touchLeft">◀</button>
+                <button id="touchRight">▶</button>
+            </div>
+            <button id="touchJump">▲</button>
+        </div>
     </div>
 
+    <!-- Финальный экран -->
     <div id="gameOver">
         <h2>Игра Окончена..</h2>
         <p>может быть..</p>
@@ -220,7 +469,12 @@
 
 <script>
 // ============================================================
-//  FIREBASE CONFIG (ваша)
+//  ВЫБОР РЕЖИМА ОПТИМИЗАЦИИ
+// ============================================================
+const USE_MOBILE_LAYOUT = true;   // true – сенсорные кнопки, false – только клавиатура (ПК)
+
+// ============================================================
+//  FIREBASE CONFIG
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyC1yg9Up6LrfSt1VTHyBK_gvZ8058CSI6A",
@@ -241,19 +495,22 @@ const db = firebase.database();
 //  КОНСТАНТЫ
 // ============================================================
 const TOTAL_LEVELS = 10;
-const STORAGE_KEY = 'pixelman_data'; // всё равно оставляем для локального кэша
+const STORAGE_KEY = 'pixelman_data';
 const GRAVITY = 0.5;
 const JUMP_FORCE = -9.0;
 const MOVE_SPEED = 3.2;
 const PLAYER_W = 24, PLAYER_H = 28;
 const COIN_REWARDS = [1,3,5,7,9,11,13,15,17,20];
+const MAX_MULT_LEVEL = 10;
+const MAX_AFK_LEVEL = 10;
 
+// Скины с новыми ценами и множителями
 const SKINS = [
-    { id:0, name:'Белая', color:'#ffffff', price:0 },
-    { id:1, name:'Красная', color:'#c0392b', price:20 },
-    { id:2, name:'Синяя', color:'#2980b9', price:20 },
-    { id:3, name:'Зелёная', color:'#27ae60', price:20 },
-    { id:4, name:'Золотая', color:'#f1c40f', price:100 }
+    { id:0, name:'Белая', color:'#ffffff', price:0, multiplier:1 },
+    { id:1, name:'Красная', color:'#c0392b', price:80, multiplier:1.5 },
+    { id:2, name:'Синяя', color:'#2980b9', price:150, multiplier:2 },
+    { id:3, name:'Зелёная', color:'#27ae60', price:300, multiplier:3 },
+    { id:4, name:'Золотая', color:'#f1c40f', price:800, multiplier:5 }
 ];
 
 // ============================================================
@@ -297,14 +554,16 @@ LEVELS.push(makeLevel([
 // ============================================================
 //  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ============================================================
-let currentUser = null;          // firebase User
+let currentUser = null;
 let gameData = {
     userId: '',
     maxLevel: 1,
     coins: 0,
     ownedSkins: [0],
     activeSkin: 0,
-    completedLevels: []
+    completedLevels: [],
+    multLevel: 0,
+    afkLevel: 0
 };
 
 let currentLevel = 0;
@@ -318,7 +577,7 @@ const DOOR_W = 30;
 const DOOR_H = 500;
 let keys = { left:false, right:false, jump:false };
 let canvas, ctx;
-let menuEl, gameWrapper, gameOverEl, shopEl, transferModal;
+let menuEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal;
 let levelGrid, coinDisplay, userIdDisplay, syncStatus;
 let afkActive = false;
 let afkInterval = null;
@@ -336,15 +595,49 @@ let introJumpActive = false;
 let introJumpTimer = 0;
 let introWalkTime = 0;
 
+let touchControls, touchLeft, touchRight, touchJump;
+
 // ============================================================
-//  ГЕНЕРАЦИЯ ID (запасной, если Firebase не сработает)
+//  ФУНКЦИИ ДЛЯ АПГРЕЙДОВ И МНОЖИТЕЛЕЙ
+// ============================================================
+function getTotalMultiplier() {
+    const skin = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
+    let base = skin.multiplier;
+    const bonus = gameData.multLevel * 0.2; // +0.2 за уровень
+    return base + bonus;
+}
+
+function getAfkCooldown() {
+    let cooldown = 120 - gameData.afkLevel * 10; // -10 сек за уровень
+    if (cooldown < 20) cooldown = 20; // минимум 20 сек
+    return cooldown;
+}
+
+function getMultUpgradeCost() {
+    return 100 * (gameData.multLevel + 1);
+}
+
+function getAfkUpgradeCost() {
+    return 100 * (gameData.afkLevel + 1);
+}
+
+function canBuyMult() {
+    return gameData.multLevel < MAX_MULT_LEVEL && gameData.coins >= getMultUpgradeCost();
+}
+
+function canBuyAfk() {
+    return gameData.afkLevel < MAX_AFK_LEVEL && gameData.coins >= getAfkUpgradeCost();
+}
+
+// ============================================================
+//  ГЕНЕРАЦИЯ ID (запасной)
 // ============================================================
 function generateUserId() {
     return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 }
 
 // ============================================================
-//  ЗАГРУЗКА / СОХРАНЕНИЕ ДАННЫХ
+//  ЗАГРУЗКА / СОХРАНЕНИЕ ДАННЫХ (Firebase)
 // ============================================================
 function saveGameToFirebase() {
     if (!currentUser) return;
@@ -354,7 +647,9 @@ function saveGameToFirebase() {
         coins: gameData.coins,
         ownedSkins: gameData.ownedSkins,
         activeSkin: gameData.activeSkin,
-        completedLevels: gameData.completedLevels
+        completedLevels: gameData.completedLevels,
+        multLevel: gameData.multLevel,
+        afkLevel: gameData.afkLevel
     }).catch(err => console.warn('Ошибка сохранения:', err));
 }
 
@@ -369,13 +664,15 @@ function loadGameFromFirebase() {
             gameData.ownedSkins = data.ownedSkins || [0];
             gameData.activeSkin = data.activeSkin || 0;
             gameData.completedLevels = data.completedLevels || [];
+            gameData.multLevel = data.multLevel || 0;
+            gameData.afkLevel = data.afkLevel || 0;
             if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
         } else {
-            // Нет данных – создаём запись
             saveGameToFirebase();
         }
         updateUI();
         setSyncStatus(true);
+        updateUpgradeUI();
     }).catch(err => {
         console.warn('Ошибка загрузки из Firebase:', err);
         setSyncStatus(false);
@@ -383,7 +680,7 @@ function loadGameFromFirebase() {
 }
 
 // ============================================================
-//  АУТЕНТИФИКАЦИЯ FIREBASE (анонимный вход)
+//  АУТЕНТИФИКАЦИЯ
 // ============================================================
 function signInAnonymously() {
     auth.signInAnonymously()
@@ -391,15 +688,12 @@ function signInAnonymously() {
             currentUser = userCredential.user;
             gameData.userId = currentUser.uid;
             userIdDisplay.textContent = gameData.userId;
-            // Загружаем данные из Firebase
             loadGameFromFirebase();
-            // Сохраняем userId в localStorage на всякий случай
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: gameData.userId }));
             console.log('Анонимный вход выполнен, UID:', currentUser.uid);
         })
         .catch(error => {
             console.error('Ошибка анонимного входа:', error);
-            // Если Firebase Auth не работает – используем локальный ID
             const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) {
                 try {
@@ -412,8 +706,6 @@ function signInAnonymously() {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: gameData.userId }));
             }
             userIdDisplay.textContent = gameData.userId;
-            // При ошибке пытаемся загрузить данные из локального хранилища
-            // (просто оставляем как есть)
             updateUI();
         });
 }
@@ -458,10 +750,18 @@ function buildMenu() {
     }
     if (coinDisplay) coinDisplay.textContent = gameData.coins;
     if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
+    // Обновляем AFK-кнопку
+    if (afkActive) {
+        afkBtnElement.textContent = '⏳ AFK фарм ВКЛ';
+        afkBtnElement.classList.add('active');
+    } else {
+        afkBtnElement.textContent = '⏳ AFK-фарм (5🪙 / ' + getAfkCooldown() + 'с)';
+        afkBtnElement.classList.remove('active');
+    }
 }
 
 // ============================================================
-//  МАГАЗИН (с сохранением в Firebase)
+//  МАГАЗИН (с отображением множителя)
 // ============================================================
 function renderShop() {
     const grid = document.getElementById('skinGrid');
@@ -486,6 +786,11 @@ function renderShop() {
         price.textContent = skin.price === 0 ? 'Бесплатно' : skin.price + ' 🪙';
         card.appendChild(price);
 
+        const mult = document.createElement('div');
+        mult.className = 'skin-multiplier';
+        mult.textContent = 'x' + skin.multiplier;
+        card.appendChild(mult);
+
         const btn = document.createElement('button');
         const owned = gameData.ownedSkins.includes(skin.id);
         const isActive = gameData.activeSkin === skin.id;
@@ -502,6 +807,7 @@ function renderShop() {
                 saveGameToFirebase();
                 renderShop();
                 updateUI();
+                updateUpgradeUI();
             });
         } else {
             const canBuy = gameData.coins >= skin.price;
@@ -515,6 +821,7 @@ function renderShop() {
                     saveGameToFirebase();
                     renderShop();
                     updateUI();
+                    updateUpgradeUI();
                     showToast('Куплен скин ' + skin.name);
                 }
             });
@@ -525,7 +832,48 @@ function renderShop() {
 }
 
 // ============================================================
-//  ПЕРЕДАЧА МОНЕТ (с проверкой через Firebase)
+//  UI УЛУЧШЕНИЙ
+// ============================================================
+function updateUpgradeUI() {
+    document.getElementById('multBonusDisplay').textContent = (gameData.multLevel * 0.2).toFixed(1);
+    document.getElementById('multLevelDisplay').textContent = gameData.multLevel;
+    document.getElementById('multCostDisplay').textContent = getMultUpgradeCost();
+    document.getElementById('afkIntervalDisplay').textContent = getAfkCooldown();
+    document.getElementById('afkLevelDisplay').textContent = gameData.afkLevel;
+    document.getElementById('afkCostDisplay').textContent = getAfkUpgradeCost();
+    document.getElementById('buyMultBtn').disabled = !canBuyMult();
+    document.getElementById('buyAfkBtn').disabled = !canBuyAfk();
+}
+
+function buyMultUpgrade() {
+    if (!canBuyMult()) return;
+    const cost = getMultUpgradeCost();
+    gameData.coins -= cost;
+    gameData.multLevel++;
+    saveGameToFirebase();
+    updateUI();
+    updateUpgradeUI();
+    showToast('Множитель увеличен!');
+}
+
+function buyAfkUpgrade() {
+    if (!canBuyAfk()) return;
+    const cost = getAfkUpgradeCost();
+    gameData.coins -= cost;
+    gameData.afkLevel++;
+    saveGameToFirebase();
+    updateUI();
+    updateUpgradeUI();
+    if (afkActive) {
+        // перезапускаем AFK с новым интервалом
+        stopAfk();
+        startAfk();
+    }
+    showToast('AFK ускорен!');
+}
+
+// ============================================================
+//  ПЕРЕДАЧА МОНЕТ
 // ============================================================
 function transferCoins(targetId, amount) {
     if (!targetId || targetId.trim() === '') {
@@ -546,17 +894,14 @@ function transferCoins(targetId, amount) {
         return;
     }
 
-    // Проверяем, существует ли пользователь с таким ID (сейчас это UID из Firebase Auth)
     db.ref('users/' + targetId).once('value')
         .then(snapshot => {
             if (!snapshot.exists()) {
                 showToast('Игрок с таким ID не найден');
                 return;
             }
-            // Снимаем монеты у отправителя
             gameData.coins -= amount;
             saveGameToFirebase();
-            // Добавляем получателю
             const targetRef = db.ref('users/' + targetId);
             targetRef.child('coins').transaction((currentCoins) => {
                 return (currentCoins || 0) + amount;
@@ -567,7 +912,6 @@ function transferCoins(targetId, amount) {
                 document.getElementById('amountInput').value = '';
                 transferModal.style.display = 'none';
             }).catch(err => {
-                // откат, если не удалось записать получателю
                 gameData.coins += amount;
                 saveGameToFirebase();
                 showToast('Ошибка передачи, попробуйте позже');
@@ -581,26 +925,27 @@ function transferCoins(targetId, amount) {
 }
 
 // ============================================================
-//  AFK-ФАРМ
+//  AFK-ФАРМ (с динамическим интервалом)
 // ============================================================
 function startAfk() {
     if (afkActive) return;
     afkActive = true;
     afkBtnElement.textContent = '⏳ AFK фарм ВКЛ';
     afkBtnElement.classList.add('active');
-    afkCountdown = 120;
+    const cooldown = getAfkCooldown();
+    afkCountdown = cooldown;
     updateAfkTimerDisplay();
     if (afkInterval) clearInterval(afkInterval);
     afkInterval = setInterval(() => {
         afkCountdown--;
         updateAfkTimerDisplay();
         if (afkCountdown <= 0) {
-            const reward = 5;
+            const reward = Math.round(5 * getTotalMultiplier());
             gameData.coins += reward;
             saveGameToFirebase();
             updateUI();
             showToast('+' + reward + ' 🪙 (AFK-фарм)');
-            afkCountdown = 120;
+            afkCountdown = getAfkCooldown();
             updateAfkTimerDisplay();
         }
     }, 1000);
@@ -609,13 +954,13 @@ function startAfk() {
 function stopAfk() {
     if (!afkActive) return;
     afkActive = false;
-    afkBtnElement.textContent = '⏳ AFK-фарм (5🪙 / 2мин)';
+    afkBtnElement.textContent = '⏳ AFK-фарм (5🪙 / ' + getAfkCooldown() + 'с)';
     afkBtnElement.classList.remove('active');
     if (afkInterval) {
         clearInterval(afkInterval);
         afkInterval = null;
     }
-    afkCountdown = 120;
+    afkCountdown = getAfkCooldown();
     afkTimerElement.textContent = '0с';
 }
 
@@ -629,7 +974,7 @@ function updateAfkTimerDisplay() {
 }
 
 // ============================================================
-//  ИГРОВАЯ ЛОГИКА (без изменений)
+//  ИГРОВАЯ ЛОГИКА (с множителем)
 // ============================================================
 function startLevel(index) {
     if (index < 0 || index >= TOTAL_LEVELS) return;
@@ -700,28 +1045,32 @@ function update() {
         }
     }
 
+    // Сбор монет – с множителем
+    const mult = getTotalMultiplier();
     for (let c of coins) {
         if (!c.collected) {
             const dx = (player.x + PLAYER_W/2) - c.x;
             const dy = (player.y + PLAYER_H/2) - c.y;
             if (Math.sqrt(dx*dx + dy*dy) < c.radius + 14) {
                 c.collected = true;
-                const reward = 1;
+                const reward = Math.round(1 * mult);
                 gameData.coins += reward;
                 saveGameToFirebase();
                 updateUI();
-                showToast('+1 🪙 (собрано)');
+                showToast('+' + reward + ' 🪙 (собрано)');
             }
         }
     }
 
     if (player.y > 600) { restartLevel(); return; }
 
+    // Прохождение уровня – с множителем
     if (player.x + PLAYER_W > doorX && player.x < doorX + DOOR_W &&
         player.y + PLAYER_H > 0 && player.y < 500) {
         const levelNum = currentLevel + 1;
         if (!gameData.completedLevels.includes(levelNum)) {
-            const reward = COIN_REWARDS[currentLevel];
+            const baseReward = COIN_REWARDS[currentLevel];
+            const reward = Math.round(baseReward * mult);
             gameData.coins += reward;
             gameData.completedLevels.push(levelNum);
             saveGameToFirebase();
@@ -745,21 +1094,21 @@ function restartLevel() {
 }
 
 // ============================================================
-//  ОТРИСОВКА ЗАСТАВКИ (без изменений)
+//  ОТРИСОВКА ЗАСТАВКИ (адаптивная)
 // ============================================================
 function drawIntro() {
-    ctx.clearRect(0, 0, 800, 500);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const grad = ctx.createLinearGradient(0, 0, 0, 500);
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     grad.addColorStop(0, '#0a0a2a');
     grad.addColorStop(1, '#1a1a3a');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 800, 500);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = '#ffffff';
     for (let i = 0; i < 80; i++) {
-        const sx = (i * 37) % 800;
-        const sy = (i * 53) % 500;
+        const sx = (i * 37) % canvas.width;
+        const sy = (i * 53) % canvas.height;
         const size = (i % 3) + 1;
         ctx.globalAlpha = 0.3 + (i % 5) * 0.1;
         ctx.fillRect(sx, sy, size, size);
@@ -780,14 +1129,14 @@ function drawIntro() {
     }
     introBlocks = introBlocks.filter(b => b.x + b.w > -20);
     const last = introBlocks[introBlocks.length-1];
-    if (last && last.x + last.w < 700) {
+    if (last && last.x + last.w < canvas.width - 100) {
         const gap = 80 + Math.random() * 120;
         const x = last.x + last.w + gap;
         const y = introBaseY - 20 - Math.random() * 60;
         const w = 50 + Math.random() * 40;
         introBlocks.push({ x, y, w, h:16 });
     } else if (introBlocks.length === 0) {
-        introBlocks.push({ x: 800, y: introBaseY - 20, w: 60, h:16 });
+        introBlocks.push({ x: canvas.width, y: introBaseY - 20, w: 60, h:16 });
     }
 
     ctx.fillStyle = '#6a7a9a';
@@ -815,7 +1164,7 @@ function drawIntro() {
 
     introWalkTime += 0.15;
 
-    const px = 400 - PLAYER_W/2;
+    const px = canvas.width/2 - PLAYER_W/2;
     const py = introBaseY - PLAYER_H + introJumpOffset;
 
     const skinColor = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
@@ -871,31 +1220,31 @@ function drawIntro() {
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 64px "Press Start 2P", cursive';
+    ctx.font = 'bold ' + Math.min(64, canvas.width/12) + 'px "Press Start 2P", cursive';
     ctx.fillStyle = '#0ff';
     ctx.shadowColor = '#0ff';
     ctx.shadowBlur = 30;
-    ctx.fillText('PixelMan', 400, 160);
+    ctx.fillText('PixelMan', canvas.width/2, canvas.height*0.32);
     ctx.shadowColor = '#f0f';
     ctx.shadowBlur = 40;
-    ctx.fillText('PixelMan', 400, 160);
+    ctx.fillText('PixelMan', canvas.width/2, canvas.height*0.32);
     ctx.shadowBlur = 0;
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
-    ctx.strokeText('PixelMan', 400, 160);
+    ctx.strokeText('PixelMan', canvas.width/2, canvas.height*0.32);
 
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = '14px "Press Start 2P", cursive';
-    ctx.fillText('Кликни в любую точку', 400, 480);
+    ctx.font = Math.min(14, canvas.width/40) + 'px "Press Start 2P", cursive';
+    ctx.fillText('Кликни в любую точку', canvas.width/2, canvas.height*0.92);
 }
 
 // ============================================================
-//  ОТРИСОВКА ИГРЫ (без изменений)
+//  ОТРИСОВКА ИГРЫ
 // ============================================================
 function draw() {
-    ctx.clearRect(0,0,800,500);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = '#1a1a3a';
-    ctx.fillRect(0,0,800,500);
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 
     ctx.fillStyle = '#6a7a9a';
     for (let p of platforms) {
@@ -923,7 +1272,7 @@ function draw() {
     }
 
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(doorX, 0, DOOR_W, DOOR_H);
+    ctx.fillRect(doorX, 0, DOOR_W, canvas.height);
     const letters = ['В', 'Ы', 'Х', 'О', 'Д'];
     const centerX = doorX + DOOR_W/2;
     const startY = 120;
@@ -1061,6 +1410,41 @@ window.addEventListener('keydown', handleKeyDown);
 window.addEventListener('keyup', handleKeyUp);
 
 // ============================================================
+//  СЕНСОРНЫЕ КНОПКИ
+// ============================================================
+function setupTouchControls() {
+    if (!USE_MOBILE_LAYOUT) {
+        touchControls.style.display = 'none';
+        return;
+    }
+    touchControls.style.display = 'flex';
+
+    function addTouchListeners(btn, keyOn, keyOff) {
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            keys[keyOn] = true;
+        });
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            keys[keyOn] = false;
+            if (keyOff) keys[keyOff] = false;
+        });
+        btn.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            keys[keyOn] = false;
+            if (keyOff) keys[keyOff] = false;
+        });
+        btn.addEventListener('mousedown', () => { keys[keyOn] = true; });
+        btn.addEventListener('mouseup', () => { keys[keyOn] = false; if (keyOff) keys[keyOff] = false; });
+        btn.addEventListener('mouseleave', () => { keys[keyOn] = false; if (keyOff) keys[keyOff] = false; });
+    }
+
+    addTouchListeners(touchLeft, 'left');
+    addTouchListeners(touchRight, 'right');
+    addTouchListeners(touchJump, 'jump');
+}
+
+// ============================================================
 //  ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 window.onload = function() {
@@ -1071,6 +1455,7 @@ window.onload = function() {
     gameOverEl = document.getElementById('gameOver');
     shopEl = document.getElementById('shop');
     transferModal = document.getElementById('transferModal');
+    upgradeModal = document.getElementById('upgradeModal');
     levelGrid = document.getElementById('levelGrid');
     coinDisplay = document.getElementById('coinDisplay');
     userIdDisplay = document.getElementById('userId');
@@ -1079,15 +1464,13 @@ window.onload = function() {
     afkBtnElement = document.getElementById('afkBtn');
     afkTimerElement = document.getElementById('afkTimer');
 
-    // Сначала показываем заставку, меню скрыто
-    menuEl.style.display = 'none';
-    gameWrapper.style.display = 'block';
-    gameOverEl.style.display = 'none';
-    shopEl.style.display = 'none';
-    transferModal.style.display = 'none';
-    document.getElementById('backToMenu').style.display = 'none';
+    touchControls = document.getElementById('touchControls');
+    touchLeft = document.getElementById('touchLeft');
+    touchRight = document.getElementById('touchRight');
+    touchJump = document.getElementById('touchJump');
 
-    // Запускаем анонимный вход Firebase
+    setupTouchControls();
+
     signInAnonymously();
 
     // Обработчики UI
@@ -1107,6 +1490,21 @@ window.onload = function() {
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     afkBtnElement.addEventListener('click', toggleAfk);
 
+    // Улучшения
+    document.getElementById('upgradeBtn').addEventListener('click', () => {
+        upgradeModal.style.display = 'flex';
+        updateUpgradeUI();
+    });
+    document.getElementById('closeUpgrade').addEventListener('click', () => {
+        upgradeModal.style.display = 'none';
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target === upgradeModal) upgradeModal.style.display = 'none';
+    });
+    document.getElementById('buyMultBtn').addEventListener('click', buyMultUpgrade);
+    document.getElementById('buyAfkBtn').addEventListener('click', buyAfkUpgrade);
+
+    // Передача
     document.getElementById('transferBtn').addEventListener('click', () => {
         transferModal.style.display = 'flex';
         document.getElementById('targetIdInput').value = '';
@@ -1124,7 +1522,7 @@ window.onload = function() {
         transferCoins(target, amount);
     });
 
-    // Выход из заставки по клику
+    // Выход из заставки
     function exitIntro() {
         if (introActive) {
             introActive = false;
@@ -1139,6 +1537,14 @@ window.onload = function() {
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
 
+    menuEl.style.display = 'none';
+    gameWrapper.style.display = 'block';
+    gameOverEl.style.display = 'none';
+    shopEl.style.display = 'none';
+    transferModal.style.display = 'none';
+    upgradeModal.style.display = 'none';
+    document.getElementById('backToMenu').style.display = 'none';
+
     window._loopStarted = false;
     requestAnimationFrame(gameLoop);
 };
@@ -1151,9 +1557,11 @@ function goToMenu() {
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
     transferModal.style.display = 'none';
+    upgradeModal.style.display = 'none';
     menuEl.style.display = 'flex';
     document.getElementById('backToMenu').style.display = 'none';
     updateUI();
+    updateUpgradeUI();
     keys = {left:false, right:false, jump:false};
     player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
 }
