@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
+        /* Все стили без изменений – оставляю как в v2.3 */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; touch-action: manipulation; }
         #app { background: #12122a; border-radius: 16px; padding: 16px; box-shadow: 0 0 40px #2a2a6a; position: relative; width: 100%; max-width: 820px; margin: 0 auto; }
@@ -37,20 +38,25 @@
         .menu-actions .transfer-btn:hover { background: #3a8a8a; }
         .menu-actions .upgrade-btn { background: #4a2a6a; }
         .menu-actions .upgrade-btn:hover { background: #6a3a8a; }
+        .menu-actions .admin-btn { background: #8a2a2a; }
+        .menu-actions .admin-btn:hover { background: #aa3a3a; }
         .afk-area { display: flex; align-items: center; gap: 15px; background: #1a1a3a; padding: 8px 20px; border-radius: 40px; border: 1px solid #4a4a7a; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 420px; }
         .afk-btn { background: #2a6a3a; color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-size: clamp(10px, 2vw, 16px); cursor: pointer; transition: 0.2s; font-weight: bold; font-family: 'Press Start 2P', cursive; }
         .afk-btn.active { background: #6a3a2a; }
         .afk-btn:hover { transform: scale(1.05); }
         .afk-timer { color: #8af; font-size: clamp(12px, 2vw, 16px); min-width: 60px; text-align: center; font-family: 'Press Start 2P', cursive; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #12122a; padding: 30px; border-radius: 16px; min-width: 280px; max-width: 90%; border: 2px solid #3a3a7a; display: flex; flex-direction: column; gap: 20px; }
+        .modal-content { background: #12122a; padding: 30px; border-radius: 16px; min-width: 280px; max-width: 90%; border: 2px solid #3a3a7a; display: flex; flex-direction: column; gap: 20px; max-height: 90vh; overflow-y: auto; }
         .modal-content h2 { color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(16px, 4vw, 24px); text-align: center; }
         .modal-content label { color: #ccc; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); }
-        .modal-content input { padding: 10px; border-radius: 8px; border: 1px solid #3a3a6a; background: #1a1a3a; color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(12px, 2.5vw, 16px); width: 100%; }
-        .modal-content .modal-actions { display: flex; gap: 15px; justify-content: center; }
+        .modal-content input, .modal-content textarea { padding: 10px; border-radius: 8px; border: 1px solid #3a3a6a; background: #1a1a3a; color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(12px, 2.5vw, 16px); width: 100%; }
+        .modal-content textarea { min-height: 60px; resize: vertical; }
+        .modal-content .modal-actions { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
         .modal-content .modal-actions button { padding: 10px 24px; border: none; border-radius: 20px; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); cursor: pointer; }
         .modal-content .modal-actions .send-btn { background: #2a8a3a; color: #fff; }
         .modal-content .modal-actions .send-btn:hover { background: #3aaa4a; }
+        .modal-content .modal-actions .danger-btn { background: #8a2a2a; color: #fff; }
+        .modal-content .modal-actions .danger-btn:hover { background: #aa3a3a; }
         .modal-content .modal-actions .cancel-btn { background: #633; color: #fff; }
         .modal-content .modal-actions .cancel-btn:hover { background: #833; }
         .upgrade-item { background: #1a1a3a; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -89,44 +95,14 @@
         #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); z-index: 10; }
         #backToMenu:hover { background: #555; }
         .game-wrapper { position: relative; display: block; }
-        .touch-controls {
-            display: none !important;
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            padding: 0 20px;
-            z-index: 5;
-            justify-content: space-between;
-            pointer-events: none;
-        }
+        .touch-controls { display: none !important; position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 20px; z-index: 5; justify-content: space-between; pointer-events: none; }
         .touch-controls.active { display: flex !important; }
         .touch-controls .left-right { display: flex; gap: 20px; pointer-events: auto; }
-        .touch-controls .left-right button,
-        .touch-controls .jump-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.4);
-            background: rgba(255,255,255,0.2);
-            color: #fff;
-            font-size: 28px;
-            backdrop-filter: blur(4px);
-            touch-action: manipulation;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            pointer-events: auto;
+        .touch-controls .left-right button, .touch-controls .jump-btn {
+            width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.2); color: #fff; font-size: 28px; backdrop-filter: blur(4px); touch-action: manipulation; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; pointer-events: auto;
         }
-        .touch-controls .left-right button:active,
-        .touch-controls .jump-btn:active { background: rgba(255,255,255,0.5); }
-        @media (max-width: 600px) {
-            .touch-controls .left-right button,
-            .touch-controls .jump-btn { width: 60px; height: 60px; font-size: 24px; }
-        }
+        .touch-controls .left-right button:active, .touch-controls .jump-btn:active { background: rgba(255,255,255,0.5); }
+        @media (max-width: 600px) { .touch-controls .left-right button, .touch-controls .jump-btn { width: 60px; height: 60px; font-size: 24px; } }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: clamp(12px, 2.5vw, 18px); border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-family: 'Press Start 2P', cursive; }
         .toast.show { opacity: 1; }
     </style>
@@ -134,7 +110,7 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v2.3</div>
+        <div class="version">v3.0</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -148,6 +124,7 @@
             <button class="transfer-btn" id="transferBtn">📤 Передать</button>
             <button class="reset-btn" id="resetBtn">🔄 Заново (уровни)</button>
             <button id="exitBtnMenu">🚪 Выйти</button>
+            <button class="admin-btn" id="adminBtn" style="display:none;">🔧 Админ</button>
         </div>
         <div class="afk-area">
             <button class="afk-btn" id="afkBtn">⏳ AFK-фарм (5🪙 / 2мин)</button>
@@ -167,6 +144,33 @@
         <h2>🏪 Магазин скинов</h2>
         <div class="shop-grid" id="skinGrid"></div>
         <button class="close-shop" id="closeShop">Закрыть</button>
+    </div>
+
+    <!-- Админ-панель -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <h2>🔧 Админ-панель</h2>
+            <label>UID игрока</label>
+            <input type="text" id="adminTargetUid" placeholder="Введите UID">
+            <label>Количество монет</label>
+            <input type="number" id="adminCoinAmount" placeholder="Сумма">
+            <div class="modal-actions">
+                <button class="send-btn" id="adminAddCoins">➕ Выдать монеты</button>
+                <button class="danger-btn" id="adminRemoveCoins">➖ Удалить монеты</button>
+            </div>
+            <div class="modal-actions">
+                <button class="danger-btn" id="adminBan">🚫 Забанить</button>
+                <button class="send-btn" id="adminUnban">✅ Разбанить</button>
+            </div>
+            <label>Предупреждение (текст)</label>
+            <textarea id="adminWarningText" placeholder="Текст предупреждения"></textarea>
+            <div class="modal-actions">
+                <button class="send-btn" id="adminSendWarning">📨 Отправить предупреждение</button>
+            </div>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="adminClose">Закрыть</button>
+            </div>
+        </div>
     </div>
 
     <div class="modal" id="upgradeModal">
@@ -237,11 +241,7 @@ const firebaseConfig = {
     measurementId: "G-4QP3LMZ9WV"
 };
 
-try {
-    firebase.initializeApp(firebaseConfig);
-} catch (e) {
-    console.error('Firebase init error:', e);
-}
+try { firebase.initializeApp(firebaseConfig); } catch(e) {}
 const auth = firebase.auth();
 const db = firebase.database();
 
@@ -256,39 +256,58 @@ const MOVE_SPEED = 3.2;
 const PLAYER_W = 24, PLAYER_H = 28;
 const MAX_MULT_LEVEL = 10;
 const MAX_AFK_LEVEL = 10;
+const ADMIN_UIDS = ['KDUCqREFAPM8lJxbHT7FzcVjXcm2', 'PTeDx5viMvNizIzJgKVraXtqCeC3'];
 
+// ============================================================
+//  НОВЫЕ СКИНЫ (15 штук)
+// ============================================================
 const SKINS = [
+    // старые 5
     { id:0, name:'Белая', color:'#ffffff', price:0, multiplier:1 },
     { id:1, name:'Красная', color:'#c0392b', price:80, multiplier:1.5 },
     { id:2, name:'Синяя', color:'#2980b9', price:150, multiplier:2 },
     { id:3, name:'Зелёная', color:'#27ae60', price:300, multiplier:3 },
-    { id:4, name:'Золотая', color:'#f1c40f', price:800, multiplier:5 }
+    { id:4, name:'Золотая', color:'#f1c40f', price:800, multiplier:5 },
+    // новые 10
+    { id:5, name:'Неоновая', color:'#ff00ff', price:1200, multiplier:8 },
+    { id:6, name:'Космическая', color:'#0a0a3a', price:2000, multiplier:12 },
+    { id:7, name:'Огненная', color:'#ff5500', price:3500, multiplier:20 },
+    { id:8, name:'Ледяная', color:'#00ffff', price:5000, multiplier:30 },
+    { id:9, name:'Радужная', color:'#ffaa00', price:8000, multiplier:45 },
+    { id:10, name:'Теневая', color:'#1a1a1a', price:12000, multiplier:70 },
+    { id:11, name:'Кибер', color:'#00ffaa', price:20000, multiplier:100 },
+    { id:12, name:'Зеркальная', color:'#cccccc', price:35000, multiplier:150 },
+    { id:13, name:'Ретро', color:'#ffaa88', price:60000, multiplier:250 },
+    { id:14, name:'Пиксельная', color:'#000000', price:1000000, multiplier:500000 }
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (без изменений)
+//  ГЕНЕРАЦИЯ 50 УНИКАЛЬНЫХ УРОВНЕЙ (возрастающая сложность)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
     for (let i = 0; i < count; i++) {
-        const rng = (seed) => { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
-        const r = rng(i * 137 + 42);
-        const baseY = 440 - (i % 5) * 5 - Math.floor(i / 8) * 3;
-        const platCount = 4 + (i % 5) + Math.floor(i / 6);
+        // Сложность: от 0 до 1
+        const difficulty = i / count; // 0..0.98
+        // Количество платформ: от 4 до 10
+        const platCount = 4 + Math.floor(difficulty * 6) + Math.floor(Math.random() * 2);
+        const baseY = 440 - Math.floor(difficulty * 40);
+        const minGap = 70 - Math.floor(difficulty * 20);
+        const maxGap = 130 - Math.floor(difficulty * 30);
         const platforms = [];
         const startPlat = { x: 10, y: baseY, w: 70, h: 16 };
         platforms.push(startPlat);
         let cx = startPlat.x + startPlat.w;
         let cy = baseY;
         const maxX = 760;
-        const minGap = 70;
-        const maxGap = 130;
+        const rng = (seed) => { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
+        const r = rng(i * 137 + 42);
         for (let j = 0; j < platCount; j++) {
-            const w = 50 + Math.floor(r() * 30);
+            const w = 40 + Math.floor(r() * 30) + Math.floor(difficulty * 20);
             const h = 16;
-            const yOffset = Math.floor(r() * 40 - 20);
+            const yOffset = Math.floor(r() * 40 - 20) - Math.floor(difficulty * 20);
             const py = Math.min(440, Math.max(300, cy + yOffset));
-            const gap = minGap + Math.floor(r() * (maxGap - minGap));
+            const gap = Math.floor((minGap + r() * (maxGap - minGap)) + difficulty * 20);
             cx += gap;
             if (cx + w > maxX) break;
             platforms.push({ x: cx, y: py, w, h });
@@ -297,20 +316,20 @@ function generateLevels(count) {
         }
         while (platforms.length < 3) {
             const last = platforms[platforms.length - 1];
-            const newX = last.x + last.w + 80;
-            const newY = Math.min(440, Math.max(300, last.y + (Math.random() * 40 - 20)));
+            const newX = last.x + last.w + 80 + Math.floor(difficulty * 40);
+            const newY = Math.min(440, Math.max(300, last.y + (Math.random() * 40 - 20) - difficulty * 20));
             platforms.push({ x: newX, y: newY, w: 60, h: 16 });
         }
         const coinPositions = [];
         for (let j = 1; j < platforms.length; j++) {
-            if (j % 3 === 0 || r() > 0.7) {
+            if (j % 2 === 0 || r() > 0.6 - difficulty * 0.2) {
                 const p = platforms[j];
                 const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
                 const coinY = p.y - 15 - Math.random() * 10;
                 coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
             }
         }
-        const extraCount = Math.floor(platCount / 3);
+        const extraCount = Math.floor(platCount / 2) + Math.floor(difficulty * 3);
         for (let j = 0; j < extraCount; j++) {
             const idx = Math.floor(r() * platforms.length);
             if (idx === 0) continue;
@@ -322,7 +341,7 @@ function generateLevels(count) {
         const playerX = startPlat.x + 10;
         const playerY = startPlat.y - PLAYER_H;
         const lastPlat = platforms[platforms.length - 1];
-        let doorX = Math.min(lastPlat.x + lastPlat.w + 60, 780);
+        let doorX = Math.min(lastPlat.x + lastPlat.w + 60 + Math.floor(difficulty * 30), 780);
         if (doorX < 700) doorX = 700;
         levels.push({
             platforms: platforms,
@@ -336,9 +355,7 @@ function generateLevels(count) {
 }
 
 let LEVELS = generateLevels(TOTAL_LEVELS);
-if (LEVELS.length === 0) {
-    LEVELS = generateLevels(TOTAL_LEVELS);
-}
+if (LEVELS.length === 0) LEVELS = generateLevels(TOTAL_LEVELS);
 
 // ============================================================
 //  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
@@ -353,14 +370,15 @@ let gameData = {
     completedLevels: [],
     multLevel: 0,
     afkLevel: 0,
-    banned: false
+    banned: false,
+    warning: ''
 };
 let currentLevel = 0, gameRunning = false, gameOverShown = false;
 let player = { x:0, y:0, vx:0, vy:0, onGround:false, walkTime:0 };
 let platforms = [], coins = [], doorX = 0;
 const DOOR_W = 30, DOOR_H = 500;
 let keys = { left:false, right:false, jump:false };
-let canvas, ctx, menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal;
+let canvas, ctx, menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal, adminModal;
 let levelGrid, coinDisplay, userIdDisplay, syncStatus;
 let afkActive = false, afkInterval = null, afkCountdown = 120;
 let afkTimerElement, afkBtnElement, toastEl;
@@ -369,6 +387,7 @@ let introJumpOffset = 0, introJumpActive = false, introJumpTimer = 0, introWalkT
 let touchControls, touchLeft, touchRight, touchJump;
 let coinCollectCooldown = false;
 let useMobileLayout = false;
+let isAdmin = false;
 
 // ============================================================
 //  АНТИ-ЧИТ
@@ -403,6 +422,47 @@ function banAccount(reason) {
             <button onclick="location.reload()" style="margin-top:30px; padding:12px 30px; background:#333; color:#fff; border:1px solid #555; border-radius:10px; cursor:pointer; font-family:'Press Start 2P', cursive; font-size:14px;">Обновить страницу</button>
         </div>
     `;
+}
+
+// ============================================================
+//  АДМИН-ФУНКЦИИ
+// ============================================================
+function adminAddCoins() {
+    const uid = document.getElementById('adminTargetUid').value.trim();
+    const amount = parseInt(document.getElementById('adminCoinAmount').value);
+    if (!uid || isNaN(amount) || amount <= 0) { showToast('Введите корректные данные'); return; }
+    db.ref('users/' + uid + '/coins').transaction((current) => {
+        return (current || 0) + amount;
+    }).then(() => { showToast('Монеты выданы'); }).catch(err => showToast('Ошибка: '+err.message));
+}
+function adminRemoveCoins() {
+    const uid = document.getElementById('adminTargetUid').value.trim();
+    const amount = parseInt(document.getElementById('adminCoinAmount').value);
+    if (!uid || isNaN(amount) || amount <= 0) { showToast('Введите корректные данные'); return; }
+    db.ref('users/' + uid + '/coins').transaction((current) => {
+        return Math.max(0, (current || 0) - amount);
+    }).then(() => { showToast('Монеты удалены'); }).catch(err => showToast('Ошибка: '+err.message));
+}
+function adminBan() {
+    const uid = document.getElementById('adminTargetUid').value.trim();
+    if (!uid) { showToast('Введите UID'); return; }
+    db.ref('users/' + uid + '/banned').set(true);
+    db.ref('users/' + uid + '/banReason').set('Заблокирован администратором');
+    showToast('Пользователь забанен');
+}
+function adminUnban() {
+    const uid = document.getElementById('adminTargetUid').value.trim();
+    if (!uid) { showToast('Введите UID'); return; }
+    db.ref('users/' + uid + '/banned').set(false);
+    db.ref('users/' + uid + '/banReason').remove();
+    showToast('Пользователь разбанен');
+}
+function adminSendWarning() {
+    const uid = document.getElementById('adminTargetUid').value.trim();
+    const text = document.getElementById('adminWarningText').value.trim();
+    if (!uid || !text) { showToast('Введите UID и текст'); return; }
+    db.ref('users/' + uid + '/warning').set(text);
+    showToast('Предупреждение отправлено');
 }
 
 // ============================================================
@@ -443,7 +503,8 @@ function saveGameToFirebase() {
         completedLevels: gameData.completedLevels,
         multLevel: gameData.multLevel,
         afkLevel: gameData.afkLevel,
-        banned: gameData.banned
+        banned: gameData.banned,
+        warning: gameData.warning
     }).catch(err => console.warn('Ошибка сохранения:', err));
 }
 function loadGameFromFirebase() {
@@ -464,13 +525,25 @@ function loadGameFromFirebase() {
             gameData.completedLevels = data.completedLevels || [];
             gameData.multLevel = data.multLevel || 0;
             gameData.afkLevel = data.afkLevel || 0;
+            gameData.warning = data.warning || '';
             if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
+            if (gameData.warning) {
+                showToast('⚠️ ' + gameData.warning);
+                // очистим после показа
+                db.ref('users/' + currentUser.uid + '/warning').remove();
+                gameData.warning = '';
+            }
         } else {
             saveGameToFirebase();
         }
         updateUI();
         setSyncStatus(true);
         updateUpgradeUI();
+        // Проверка админа
+        if (ADMIN_UIDS.includes(currentUser.uid)) {
+            isAdmin = true;
+            document.getElementById('adminBtn').style.display = 'inline-block';
+        }
     }).catch(err => {
         console.warn('Ошибка загрузки из Firebase:', err);
         setSyncStatus(false);
@@ -504,7 +577,6 @@ function signInAnonymously() {
             }
             userIdDisplay.textContent = gameData.userId;
             updateUI();
-            // при ошибке всё равно показываем меню
             if (introActive) {
                 introActive = false;
                 menuEl.style.display = 'flex';
@@ -1209,6 +1281,7 @@ window.onload = function() {
     shopEl = document.getElementById('shop');
     transferModal = document.getElementById('transferModal');
     upgradeModal = document.getElementById('upgradeModal');
+    adminModal = document.getElementById('adminModal');
     levelGrid = document.getElementById('levelGrid');
     coinDisplay = document.getElementById('coinDisplay');
     userIdDisplay = document.getElementById('userId');
@@ -1221,7 +1294,6 @@ window.onload = function() {
     touchRight = document.getElementById('touchRight');
     touchJump = document.getElementById('touchJump');
 
-    // Скрываем сенсорные кнопки
     if (touchControls) touchControls.classList.remove('active');
 
     const hasDeviceMode = loadDeviceMode();
@@ -1244,6 +1316,23 @@ window.onload = function() {
     });
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     afkBtnElement.addEventListener('click', toggleAfk);
+
+    // Админ-панель
+    document.getElementById('adminBtn').addEventListener('click', () => {
+        if (!isAdmin) return;
+        adminModal.style.display = 'flex';
+    });
+    document.getElementById('adminClose').addEventListener('click', () => {
+        adminModal.style.display = 'none';
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target === adminModal) adminModal.style.display = 'none';
+    });
+    document.getElementById('adminAddCoins').addEventListener('click', adminAddCoins);
+    document.getElementById('adminRemoveCoins').addEventListener('click', adminRemoveCoins);
+    document.getElementById('adminBan').addEventListener('click', adminBan);
+    document.getElementById('adminUnban').addEventListener('click', adminUnban);
+    document.getElementById('adminSendWarning').addEventListener('click', adminSendWarning);
 
     document.getElementById('upgradeBtn').addEventListener('click', () => {
         if (gameData.banned) return;
@@ -1318,15 +1407,15 @@ window.onload = function() {
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
 
-    // Изначально: заставка видна, меню скрыто, gameWrapper виден
     introActive = true;
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
-    gameWrapper.style.display = 'block';   // показываем для заставки
+    gameWrapper.style.display = 'block';
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
     transferModal.style.display = 'none';
     upgradeModal.style.display = 'none';
+    adminModal.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
 
     window._loopStarted = false;
@@ -1342,6 +1431,7 @@ function goToMenu() {
     shopEl.style.display = 'none';
     transferModal.style.display = 'none';
     upgradeModal.style.display = 'none';
+    adminModal.style.display = 'none';
     menuEl.style.display = 'flex';
     deviceSelectEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
