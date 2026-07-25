@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>PixelMan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; }
+        #app {
+            background: #12122a;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 0 40px #2a2a6a;
+            position: relative;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #1a1a3a;
+            border-radius: 10px;
+            width: 800px;
+            height: 500px;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+        }
+        .menu {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 20px;
+            min-width: 400px;
+        }
+        .menu h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 32px;
+            color: #fff;
+            text-shadow: 0 0 20px #5af, 0 0 40px #3af;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+        }
+        .menu .profile {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 420px;
+            color: #aaa;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            background: #1a1a3a;
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid #3a3a6a;
+        }
+        .menu .profile .id { color: #8af; }
+        .menu .profile .coins { color: #ffd700; }
+        .menu .profile .sync-status { color: #8f8; font-size: 10px; margin-left: 10px; }
+        .level-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; width: 100%; max-width: 420px; }
+        .level-btn {
+            padding: 12px 0; font-size: 18px; font-weight: bold; border: none; border-radius: 8px;
+            background: #2a2a4a; color: #888; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #00000066;
+            font-family: 'Press Start 2P', cursive; font-size: 14px;
+        }
+        .level-btn.unlocked { background: #3a7eb5; color: #fff; box-shadow: 0 4px 0 #1f4a6e; }
+        .level-btn.unlocked:hover { background: #4a9ed5; transform: scale(1.05); }
+        .level-btn.locked { background: #2a2a3a; color: #555; cursor: not-allowed; opacity: 0.5; }
+        .level-btn.completed { background: #4a8a5a; color: #cfc; box-shadow: 0 4px 0 #2a5a3a; }
+        .menu-actions { display: flex; gap: 12px; margin-top: 5px; flex-wrap: wrap; justify-content: center; }
+        .menu-actions button {
+            padding: 10px 20px; font-size: 14px; border: none; border-radius: 30px;
+            background: #2a2a5a; color: #fff; cursor: pointer; transition: 0.2s;
+            font-family: 'Press Start 2P', cursive; font-size: 11px;
+        }
+        .menu-actions button:hover { background: #3a3a7a; transform: scale(1.03); }
+        .menu-actions .shop-btn { background: #8a6a2a; }
+        .menu-actions .shop-btn:hover { background: #aa8a3a; }
+        .menu-actions .reset-btn { background: #6a2a2a; }
+        .menu-actions .reset-btn:hover { background: #8a3a3a; }
+        .menu-actions .transfer-btn { background: #2a6a6a; }
+        .menu-actions .transfer-btn:hover { background: #3a8a8a; }
+        .afk-area {
+            display: flex; align-items: center; gap: 15px; background: #1a1a3a; padding: 8px 20px; border-radius: 40px; border: 1px solid #4a4a7a;
+        }
+        .afk-btn {
+            background: #2a6a3a; color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-size: 16px; cursor: pointer;
+            transition: 0.2s; font-weight: bold; font-family: 'Press Start 2P', cursive; font-size: 12px;
+        }
+        .afk-btn.active { background: #6a3a2a; }
+        .afk-btn:hover { transform: scale(1.05); }
+        .afk-timer { color: #8af; font-size: 16px; min-width: 60px; text-align: center; font-family: 'Press Start 2P', cursive; font-size: 14px; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: #12122a; padding: 30px; border-radius: 16px; min-width: 320px;
+            border: 2px solid #3a3a7a; display: flex; flex-direction: column; gap: 20px;
+        }
+        .modal-content h2 { color: #fff; font-family: 'Press Start 2P', cursive; font-size: 20px; text-align: center; }
+        .modal-content label { color: #ccc; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        .modal-content input {
+            padding: 10px; border-radius: 8px; border: 1px solid #3a3a6a; background: #1a1a3a; color: #fff;
+            font-family: 'Press Start 2P', cursive; font-size: 14px; width: 100%;
+        }
+        .modal-content .modal-actions { display: flex; gap: 15px; justify-content: center; }
+        .modal-content .modal-actions button {
+            padding: 10px 24px; border: none; border-radius: 20px;
+            font-family: 'Press Start 2P', cursive; font-size: 12px; cursor: pointer;
+        }
+        .modal-content .modal-actions .send-btn { background: #2a8a3a; color: #fff; }
+        .modal-content .modal-actions .send-btn:hover { background: #3aaa4a; }
+        .modal-content .modal-actions .cancel-btn { background: #633; color: #fff; }
+        .modal-content .modal-actions .cancel-btn:hover { background: #833; }
+        #gameOver {
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            background: #000; width: 800px; height: 500px; border-radius: 10px; color: #fff; text-align: center;
+        }
+        #gameOver h2 { font-size: 48px; letter-spacing: 4px; margin-bottom: 10px; font-family: 'Press Start 2P', cursive; }
+        #gameOver p { font-size: 20px; opacity: 0.5; margin-bottom: 40px; font-family: 'Press Start 2P', cursive; font-size: 16px; }
+        #gameOver button { padding: 12px 40px; font-size: 22px; background: #333; color: #fff; border: 1px solid #555; border-radius: 30px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 16px; }
+        #gameOver button:hover { background: #555; }
+        .shop {
+            display: none; flex-direction: column; align-items: center; gap: 15px; padding: 20px;
+            background: #0d0d22; border-radius: 12px; min-width: 400px;
+        }
+        .shop h2 { color: #ffd700; font-size: 26px; font-family: 'Press Start 2P', cursive; font-size: 20px; }
+        .shop .close-shop { background: #633; color: #fff; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        .shop-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; width: 100%; max-width: 420px; }
+        .skin-card {
+            background: #1a1a3a; border-radius: 12px; padding: 12px; text-align: center; color: #fff;
+            border: 2px solid transparent; transition: 0.2s;
+        }
+        .skin-card.active { border-color: #ffd700; box-shadow: 0 0 20px #ffd70055; }
+        .skin-card .color-preview { display: inline-block; width: 40px; height: 40px; border-radius: 50%; margin-bottom: 6px; border: 1px solid #888; }
+        .skin-card .skin-name { font-size: 14px; margin-bottom: 4px; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        .skin-card .skin-price { font-size: 12px; color: #ffd700; font-family: 'Press Start 2P', cursive; font-size: 10px; }
+        .skin-card button { margin-top: 8px; padding: 4px 12px; border: none; border-radius: 12px; cursor: pointer; background: #3a7eb5; color: #fff; font-family: 'Press Start 2P', cursive; font-size: 10px; }
+        .skin-card button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .skin-card button.buy { background: #7a8a2a; }
+        .skin-card button.select { background: #3a7eb5; }
+        .skin-card button.active-btn { background: #4a8a5a; }
+        #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: 12px; z-index: 10; }
+        #backToMenu:hover { background: #555; }
+        .game-wrapper {
+            position: relative;
+            display: block;
+        }
+        @media (max-width:860px){ canvas, #gameOver { width:100%; height:auto; aspect-ratio:8/5; } .menu, .shop { min-width:unset; width:90%; } }
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: 18px;
+            border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            font-family: 'Press Start 2P', cursive; font-size: 14px;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="menu" id="menu">
+        <h1>PixelMan</h1>
+        <div class="profile">
+            <span class="id">🆔 <span id="userId">--</span></span>
+            <span class="coins">🪙 <span id="userCoins">0</span></span>
+            <span class="sync-status" id="syncStatus">● синхр.</span>
+        </div>
+        <div class="level-grid" id="levelGrid"></div>
+        <div class="menu-actions">
+            <button class="shop-btn" id="shopBtn">🏪 Магазин</button>
+            <button class="transfer-btn" id="transferBtn">📤 Передать</button>
+            <button class="reset-btn" id="resetBtn">🔄 Заново (уровни)</button>
+            <button id="exitBtnMenu">🚪 Выйти</button>
+        </div>
+        <div class="afk-area">
+            <button class="afk-btn" id="afkBtn">⏳ AFK-фарм (5🪙 / 2мин)</button>
+            <span class="afk-timer" id="afkTimer">0с</span>
+        </div>
+    </div>
+
+    <div class="shop" id="shop">
+        <h2>🏪 Магазин скинов</h2>
+        <div class="shop-grid" id="skinGrid"></div>
+        <button class="close-shop" id="closeShop">Закрыть</button>
+    </div>
+
+    <div class="modal" id="transferModal">
+        <div class="modal-content">
+            <h2>📤 Передача монет</h2>
+            <label>ID получателя</label>
+            <input type="text" id="targetIdInput" placeholder="Введите ID игрока">
+            <label>Количество</label>
+            <input type="number" id="amountInput" placeholder="Сколько монет" min="1">
+            <div class="modal-actions">
+                <button class="send-btn" id="sendTransferBtn">Отправить</button>
+                <button class="cancel-btn" id="cancelTransferBtn">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-wrapper" id="gameWrapper">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <button id="backToMenu">← Меню</button>
+    </div>
+
+    <div id="gameOver">
+        <h2>Игра Окончена..</h2>
+        <p>может быть..</p>
+        <button id="exitBtn">Выйти</button>
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+// ============================================================
+//  FIREBASE CONFIG
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyC1yg9Up6LrfSt1VTHyBK_gvZ8058CSI6A",
+  authDomain: "pixelman-843bb.firebaseapp.com",
+  databaseURL: "https://pixelman-843bb-default-rtdb.firebaseio.com",
+  projectId: "pixelman-843bb",
+  storageBucket: "pixelman-843bb.firebasestorage.app",
+  messagingSenderId: "2008577690",
+  appId: "1:2008577690:web:61e4c1980e3ca4674e5123",
+  measurementId: "G-4QP3LMZ9WV"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============================================================
+//  КОНСТАНТЫ
+// ============================================================
+const TOTAL_LEVELS = 10;
+const STORAGE_KEY = 'pixelman_data';
+const GRAVITY = 0.5;
+const JUMP_FORCE = -9.0;
+const MOVE_SPEED = 3.2;
+const PLAYER_W = 24, PLAYER_H = 28;
+const COIN_REWARDS = [1,3,5,7,9,11,13,15,17,20];
+
+const SKINS = [
+    { id:0, name:'Белая', color:'#ffffff', price:0 },
+    { id:1, name:'Красная', color:'#c0392b', price:20 },
+    { id:2, name:'Синяя', color:'#2980b9', price:20 },
+    { id:3, name:'Зелёная', color:'#27ae60', price:20 },
+    { id:4, name:'Золотая', color:'#f1c40f', price:100 }
+];
+
+// ============================================================
+//  ДАННЫЕ УРОВНЕЙ
+// ============================================================
+const LEVELS = [];
+function makeLevel(platforms, coins, playerX, playerY, doorX) {
+    return { platforms, coins, playerX, playerY, doorX };
+}
+LEVELS.push(makeLevel([
+    {x:30,y:440,w:160,h:16},{x:260,y:400,w:120,h:16},{x:460,y:440,w:180,h:16},{x:700,y:440,w:80,h:16}
+], [{x:80,y:420},{x:200,y:380},{x:320,y:380},{x:520,y:420},{x:640,y:420}], 50, 420, 780));
+LEVELS.push(makeLevel([
+    {x:20,y:440,w:100,h:16},{x:180,y:380,w:100,h:16},{x:340,y:440,w:100,h:16},{x:500,y:380,w:100,h:16},{x:660,y:440,w:120,h:16}
+], [{x:60,y:420},{x:220,y:360},{x:380,y:420},{x:540,y:360},{x:700,y:420}], 40, 420, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:440,w:80,h:16},{x:150,y:380,w:80,h:16},{x:290,y:320,w:80,h:16},{x:430,y:380,w:80,h:16},{x:570,y:440,w:80,h:16},{x:710,y:440,w:70,h:16}
+], [{x:40,y:420},{x:180,y:360},{x:320,y:300},{x:460,y:360},{x:600,y:420},{x:740,y:420}], 25, 420, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:445,w:60,h:16},{x:140,y:390,w:60,h:16},{x:270,y:335,w:60,h:16},{x:400,y:390,w:60,h:16},{x:530,y:335,w:60,h:16},{x:660,y:445,w:60,h:16},{x:760,y:445,w:30,h:16}
+], [{x:35,y:425},{x:165,y:370},{x:295,y:315},{x:425,y:370},{x:555,y:315},{x:685,y:425},{x:775,y:425}], 20, 425, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:445,w:60,h:16},{x:150,y:390,w:60,h:16},{x:290,y:335,w:60,h:16},{x:430,y:280,w:60,h:16},{x:570,y:335,w:60,h:16},{x:710,y:445,w:80,h:16}
+], [{x:35,y:425},{x:175,y:370},{x:315,y:315},{x:455,y:260},{x:595,y:315},{x:745,y:425}], 25, 425, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:445,w:50,h:16},{x:130,y:390,w:50,h:16},{x:250,y:335,w:50,h:16},{x:370,y:280,w:50,h:16},{x:490,y:335,w:50,h:16},{x:610,y:390,w:50,h:16},{x:730,y:445,w:60,h:16}
+], [{x:30,y:425},{x:150,y:370},{x:270,y:315},{x:390,y:260},{x:510,y:315},{x:630,y:370},{x:750,y:425}], 20, 425, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:445,w:50,h:16},{x:140,y:380,w:50,h:16},{x:270,y:315,w:50,h:16},{x:400,y:380,w:50,h:16},{x:530,y:315,w:50,h:16},{x:660,y:445,w:50,h:16},{x:770,y:445,w:20,h:16}
+], [{x:30,y:425},{x:160,y:360},{x:290,y:295},{x:420,y:360},{x:550,y:295},{x:680,y:425},{x:780,y:425}], 20, 425, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:445,w:40,h:16},{x:120,y:390,w:40,h:16},{x:230,y:335,w:40,h:16},{x:340,y:280,w:40,h:16},{x:450,y:225,w:40,h:16},{x:560,y:280,w:40,h:16},{x:670,y:335,w:40,h:16},{x:780,y:445,w:20,h:16}
+], [{x:25,y:425},{x:135,y:370},{x:245,y:315},{x:355,y:260},{x:465,y:205},{x:575,y:260},{x:685,y:315},{x:790,y:425}], 20, 425, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:445,w:30,h:16},{x:110,y:390,w:30,h:16},{x:210,y:335,w:30,h:16},{x:310,y:280,w:30,h:16},{x:410,y:225,w:30,h:16},{x:510,y:280,w:30,h:16},{x:610,y:335,w:30,h:16},{x:710,y:390,w:30,h:16},{x:810,y:445,w:10,h:16}
+], [{x:20,y:425},{x:120,y:370},{x:220,y:315},{x:320,y:260},{x:420,y:205},{x:520,y:260},{x:620,y:315},{x:720,y:370},{x:815,y:425}], 20, 425, 780));
+LEVELS.push(makeLevel([
+    {x:10,y:445,w:30,h:16},{x:120,y:390,w:30,h:16},{x:230,y:335,w:30,h:16},{x:340,y:280,w:30,h:16},{x:450,y:225,w:30,h:16},{x:560,y:280,w:30,h:16},{x:670,y:335,w:30,h:16},{x:780,y:445,w:20,h:16}
+], [{x:20,y:425},{x:130,y:370},{x:240,y:315},{x:350,y:260},{x:460,y:205},{x:570,y:260},{x:680,y:315},{x:790,y:425}], 20, 425, 780));
+
+// ============================================================
+//  СОСТОЯНИЕ ИГРЫ
+// ============================================================
+let gameData = {
+    userId: '',
+    maxLevel: 1,
+    coins: 0,
+    ownedSkins: [0],
+    activeSkin: 0,
+    completedLevels: []
+};
+
+let currentLevel = 0;
+let gameRunning = false;
+let gameOverShown = false;
+let player = { x:0, y:0, vx:0, vy:0, onGround:false, walkTime:0 };
+let platforms = [];
+let coins = [];
+let doorX = 0;
+const DOOR_W = 30;
+const DOOR_H = 500;
+let keys = { left:false, right:false, jump:false };
+let canvas, ctx;
+let menuEl, gameWrapper, gameOverEl, shopEl, transferModal;
+let levelGrid, coinDisplay, userIdDisplay, syncStatus;
+let afkActive = false;
+let afkInterval = null;
+let afkCountdown = 120;
+let afkTimerElement;
+let afkBtnElement;
+let toastEl;
+
+// ============================================================
+//  ПЕРЕМЕННЫЕ ДЛЯ ЗАСТАВКИ
+// ============================================================
+let introActive = true;
+let introBlocks = [];
+let introSpeed = 3;
+let introBaseY = 420;
+let introJumpOffset = 0;
+let introJumpActive = false;
+let introJumpTimer = 0;
+let introWalkTime = 0;
+
+// ============================================================
+//  ГЕНЕРАЦИЯ ID
+// ============================================================
+function generateUserId() {
+    return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+}
+
+// ============================================================
+//  ЗАГРУЗКА / СОХРАНЕНИЕ
+// ============================================================
+function loadGame() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed.userId) gameData.userId = parsed.userId;
+            if (parsed.maxLevel !== undefined) gameData.maxLevel = parsed.maxLevel;
+            if (parsed.coins !== undefined) gameData.coins = parsed.coins;
+            if (parsed.ownedSkins) gameData.ownedSkins = parsed.ownedSkins;
+            if (parsed.activeSkin !== undefined) gameData.activeSkin = parsed.activeSkin;
+            if (parsed.completedLevels) gameData.completedLevels = parsed.completedLevels;
+            if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
+        } catch(e) {}
+    }
+    if (!gameData.userId) {
+        gameData.userId = generateUserId();
+    }
+    if (!gameData.completedLevels) gameData.completedLevels = [];
+}
+
+function saveGame() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameData));
+}
+
+// ============================================================
+//  FIREBASE – СИНХРОНИЗАЦИЯ БАЛАНСА
+// ============================================================
+function syncCoinsToFirebase() {
+    if (!gameData.userId) return;
+    db.ref('users/' + gameData.userId + '/coins').set(gameData.coins)
+        .catch(err => console.warn('Firebase write error:', err));
+}
+
+function loadCoinsFromFirebase() {
+    if (!gameData.userId) return;
+    db.ref('users/' + gameData.userId + '/coins').once('value')
+        .then(snapshot => {
+            const val = snapshot.val();
+            if (val !== null && val !== undefined) {
+                gameData.coins = val;
+                saveGame();
+                updateUI();
+                setSyncStatus(true);
+            } else {
+                syncCoinsToFirebase();
+                setSyncStatus(true);
+            }
+        })
+        .catch(err => {
+            console.warn('Firebase read error:', err);
+            setSyncStatus(false);
+        });
+}
+
+function setSyncStatus(ok) {
+    if (syncStatus) {
+        syncStatus.textContent = ok ? '● синхр.' : '⚠ офлайн';
+        syncStatus.style.color = ok ? '#8f8' : '#f88';
+    }
+}
+
+// ============================================================
+//  ОБНОВЛЕНИЕ UI
+// ============================================================
+function updateUI() {
+    if (userIdDisplay) userIdDisplay.textContent = gameData.userId;
+    if (coinDisplay) coinDisplay.textContent = gameData.coins;
+    if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
+    buildMenu();
+}
+
+// ============================================================
+//  МЕНЮ
+// ============================================================
+function buildMenu() {
+    levelGrid.innerHTML = '';
+    for (let i = 1; i <= TOTAL_LEVELS; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'level-btn';
+        const unlocked = i <= gameData.maxLevel;
+        const completed = gameData.completedLevels.includes(i);
+        if (unlocked) {
+            btn.classList.add('unlocked');
+            if (completed) btn.classList.add('completed');
+            btn.textContent = i + (completed ? ' ✓' : '');
+            btn.addEventListener('click', () => startLevel(i-1));
+        } else {
+            btn.classList.add('locked');
+            btn.textContent = i + ' 🔒';
+        }
+        levelGrid.appendChild(btn);
+    }
+    if (coinDisplay) coinDisplay.textContent = gameData.coins;
+    if (document.getElementById('userCoins')) document.getElementById('userCoins').textContent = gameData.coins;
+}
+
+// ============================================================
+//  МАГАЗИН
+// ============================================================
+function renderShop() {
+    const grid = document.getElementById('skinGrid');
+    grid.innerHTML = '';
+    SKINS.forEach(skin => {
+        const card = document.createElement('div');
+        card.className = 'skin-card';
+        if (gameData.activeSkin === skin.id) card.classList.add('active');
+
+        const preview = document.createElement('div');
+        preview.className = 'color-preview';
+        preview.style.background = skin.color;
+        card.appendChild(preview);
+
+        const name = document.createElement('div');
+        name.className = 'skin-name';
+        name.textContent = skin.name;
+        card.appendChild(name);
+
+        const price = document.createElement('div');
+        price.className = 'skin-price';
+        price.textContent = skin.price === 0 ? 'Бесплатно' : skin.price + ' 🪙';
+        card.appendChild(price);
+
+        const btn = document.createElement('button');
+        const owned = gameData.ownedSkins.includes(skin.id);
+        const isActive = gameData.activeSkin === skin.id;
+
+        if (isActive) {
+            btn.textContent = '✅ Активен';
+            btn.disabled = true;
+            btn.className = 'active-btn';
+        } else if (owned) {
+            btn.textContent = 'Выбрать';
+            btn.className = 'select';
+            btn.addEventListener('click', () => {
+                gameData.activeSkin = skin.id;
+                saveGame();
+                renderShop();
+                updateUI();
+            });
+        } else {
+            const canBuy = gameData.coins >= skin.price;
+            btn.textContent = 'Купить';
+            btn.className = 'buy';
+            btn.disabled = !canBuy;
+            btn.addEventListener('click', () => {
+                if (gameData.coins >= skin.price) {
+                    gameData.coins -= skin.price;
+                    gameData.ownedSkins.push(skin.id);
+                    saveGame();
+                    syncCoinsToFirebase();
+                    renderShop();
+                    updateUI();
+                    showToast('Куплен скин ' + skin.name);
+                }
+            });
+        }
+        card.appendChild(btn);
+        grid.appendChild(card);
+    });
+}
+
+// ============================================================
+//  ПЕРЕДАЧА МОНЕТ
+// ============================================================
+function transferCoins(targetId, amount) {
+    if (!targetId || targetId.trim() === '') {
+        showToast('Введите ID получателя');
+        return;
+    }
+    if (targetId === gameData.userId) {
+        showToast('Нельзя передать самому себе');
+        return;
+    }
+    amount = parseInt(amount);
+    if (isNaN(amount) || amount <= 0) {
+        showToast('Введите положительное число');
+        return;
+    }
+    if (amount > gameData.coins) {
+        showToast('Недостаточно монет');
+        return;
+    }
+
+    db.ref('users/' + targetId + '/coins').once('value')
+        .then(snapshot => {
+            const targetCoins = snapshot.val();
+            if (targetCoins === null || targetCoins === undefined) {
+                showToast('Игрок с таким ID не найден');
+                return;
+            }
+            gameData.coins -= amount;
+            saveGame();
+            syncCoinsToFirebase();
+            const newTargetCoins = targetCoins + amount;
+            db.ref('users/' + targetId + '/coins').set(newTargetCoins)
+                .then(() => {
+                    showToast('Передача выполнена! Отправлено ' + amount + ' монет');
+                    updateUI();
+                    document.getElementById('targetIdInput').value = '';
+                    document.getElementById('amountInput').value = '';
+                    transferModal.style.display = 'none';
+                })
+                .catch(err => {
+                    gameData.coins += amount;
+                    saveGame();
+                    syncCoinsToFirebase();
+                    showToast('Ошибка передачи, попробуйте позже');
+                    console.error(err);
+                });
+        })
+        .catch(err => {
+            showToast('Ошибка проверки получателя');
+            console.error(err);
+        });
+}
+
+// ============================================================
+//  AFK-ФАРМ
+// ============================================================
+function startAfk() {
+    if (afkActive) return;
+    afkActive = true;
+    afkBtnElement.textContent = '⏳ AFK фарм ВКЛ';
+    afkBtnElement.classList.add('active');
+    afkCountdown = 120;
+    updateAfkTimerDisplay();
+    if (afkInterval) clearInterval(afkInterval);
+    afkInterval = setInterval(() => {
+        afkCountdown--;
+        updateAfkTimerDisplay();
+        if (afkCountdown <= 0) {
+            const reward = 5;
+            gameData.coins += reward;
+            saveGame();
+            syncCoinsToFirebase();
+            updateUI();
+            showToast('+' + reward + ' 🪙 (AFK-фарм)');
+            afkCountdown = 120;
+            updateAfkTimerDisplay();
+        }
+    }, 1000);
+}
+
+function stopAfk() {
+    if (!afkActive) return;
+    afkActive = false;
+    afkBtnElement.textContent = '⏳ AFK-фарм (5🪙 / 2мин)';
+    afkBtnElement.classList.remove('active');
+    if (afkInterval) {
+        clearInterval(afkInterval);
+        afkInterval = null;
+    }
+    afkCountdown = 120;
+    afkTimerElement.textContent = '0с';
+}
+
+function toggleAfk() {
+    if (afkActive) stopAfk();
+    else startAfk();
+}
+
+function updateAfkTimerDisplay() {
+    afkTimerElement.textContent = afkCountdown + 'с';
+}
+
+// ============================================================
+//  ИГРОВАЯ ЛОГИКА
+// ============================================================
+function startLevel(index) {
+    if (index < 0 || index >= TOTAL_LEVELS) return;
+    currentLevel = index;
+    const level = LEVELS[index];
+    platforms = level.platforms.map(p => ({...p}));
+    doorX = level.doorX;
+    player.x = level.playerX; player.y = level.playerY;
+    player.vx = 0; player.vy = 0; player.onGround = false;
+    player.walkTime = 0;
+    coins = level.coins.map(c => ({x:c.x, y:c.y, radius:10, collected:false}));
+
+    gameRunning = true;
+    gameOverShown = false;
+    menuEl.style.display = 'none';
+    gameWrapper.style.display = 'block';
+    gameOverEl.style.display = 'none';
+    document.getElementById('backToMenu').style.display = 'block';
+    keys = {left:false, right:false, jump:false};
+    if (!window._loopStarted) { window._loopStarted = true; requestAnimationFrame(gameLoop); }
+    canvas.focus();
+}
+
+function update() {
+    if (!gameRunning || gameOverShown) return;
+
+    if (keys.left) player.vx = -MOVE_SPEED;
+    else if (keys.right) player.vx = MOVE_SPEED;
+    else player.vx *= 0.85;
+
+    if (keys.jump && player.onGround) {
+        player.vy = JUMP_FORCE;
+        player.onGround = false;
+    }
+
+    player.vy += GRAVITY;
+    if (player.vy > 15) player.vy = 15;
+
+    if (player.onGround && Math.abs(player.vx) > 0.5) {
+        player.walkTime += 0.15;
+    } else if (player.onGround) {
+        player.walkTime = 0;
+    }
+
+    player.x += player.vx;
+    for (let p of platforms) {
+        if (player.x < p.x + p.w && player.x + PLAYER_W > p.x &&
+            player.y < p.y + p.h && player.y + PLAYER_H > p.y) {
+            if (player.vx > 0) player.x = p.x - PLAYER_W;
+            else if (player.vx < 0) player.x = p.x + p.w;
+            player.vx = 0;
+        }
+    }
+
+    player.y += player.vy;
+    player.onGround = false;
+    for (let p of platforms) {
+        if (player.x < p.x + p.w && player.x + PLAYER_W > p.x &&
+            player.y < p.y + p.h && player.y + PLAYER_H > p.y) {
+            if (player.vy > 0) {
+                player.y = p.y - PLAYER_H;
+                player.vy = 0;
+                player.onGround = true;
+            } else if (player.vy < 0) {
+                player.y = p.y + p.h;
+                player.vy = 0;
+            }
+        }
+    }
+
+    for (let c of coins) {
+        if (!c.collected) {
+            const dx = (player.x + PLAYER_W/2) - c.x;
+            const dy = (player.y + PLAYER_H/2) - c.y;
+            if (Math.sqrt(dx*dx + dy*dy) < c.radius + 14) {
+                c.collected = true;
+                const reward = 1;
+                gameData.coins += reward;
+                saveGame();
+                syncCoinsToFirebase();
+                updateUI();
+                showToast('+1 🪙 (собрано)');
+            }
+        }
+    }
+
+    if (player.y > 600) { restartLevel(); return; }
+
+    if (player.x + PLAYER_W > doorX && player.x < doorX + DOOR_W &&
+        player.y + PLAYER_H > 0 && player.y < 500) {
+        const levelNum = currentLevel + 1;
+        if (!gameData.completedLevels.includes(levelNum)) {
+            const reward = COIN_REWARDS[currentLevel];
+            gameData.coins += reward;
+            gameData.completedLevels.push(levelNum);
+            saveGame();
+            syncCoinsToFirebase();
+            showToast('🎉 Уровень ' + levelNum + ' пройден! +' + reward + ' 🪙');
+        } else {
+            showToast('✅ Уровень ' + levelNum + ' пройден (повторно)');
+        }
+        if (levelNum > gameData.maxLevel) gameData.maxLevel = levelNum;
+        saveGame();
+        if (levelNum >= TOTAL_LEVELS) {
+            showGameOver();
+        } else {
+            startLevel(currentLevel + 1);
+        }
+        return;
+    }
+}
+
+function restartLevel() {
+    startLevel(currentLevel);
+}
+
+// ============================================================
+//  ОТРИСОВКА ЗАСТАВКИ (ИСПРАВЛЕНА)
+// ============================================================
+function drawIntro() {
+    ctx.clearRect(0, 0, 800, 500);
+
+    // Фон
+    const grad = ctx.createLinearGradient(0, 0, 0, 500);
+    grad.addColorStop(0, '#0a0a2a');
+    grad.addColorStop(1, '#1a1a3a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 800, 500);
+
+    // Звёзды
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 80; i++) {
+        const sx = (i * 37) % 800;
+        const sy = (i * 53) % 500;
+        const size = (i % 3) + 1;
+        ctx.globalAlpha = 0.3 + (i % 5) * 0.1;
+        ctx.fillRect(sx, sy, size, size);
+    }
+    ctx.globalAlpha = 1.0;
+
+    // Генерация блоков
+    if (introBlocks.length === 0) {
+        for (let i = 0; i < 8; i++) {
+            const x = 100 + i * 120 + Math.random() * 40;
+            const y = introBaseY - 20 - Math.random() * 60;
+            const w = 50 + Math.random() * 40;
+            introBlocks.push({ x, y, w, h:16 });
+        }
+    }
+
+    // Сдвиг блоков
+    for (let b of introBlocks) {
+        b.x -= introSpeed;
+    }
+    introBlocks = introBlocks.filter(b => b.x + b.w > -20);
+    const last = introBlocks[introBlocks.length-1];
+    if (last && last.x + last.w < 700) {
+        const gap = 80 + Math.random() * 120;
+        const x = last.x + last.w + gap;
+        const y = introBaseY - 20 - Math.random() * 60;
+        const w = 50 + Math.random() * 40;
+        introBlocks.push({ x, y, w, h:16 });
+    } else if (introBlocks.length === 0) {
+        introBlocks.push({ x: 800, y: introBaseY - 20, w: 60, h:16 });
+    }
+
+    // Рисуем блоки
+    ctx.fillStyle = '#6a7a9a';
+    for (let b of introBlocks) {
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = '#8a9aba';
+        ctx.fillRect(b.x+2, b.y-2, b.w-4, 4);
+        ctx.fillStyle = '#6a7a9a';
+    }
+
+    // Анимация прыжка (чаще и выше)
+    introJumpTimer += 1/60; // ~60 FPS
+    if (!introJumpActive && introJumpTimer > 1.5 + Math.random() * 1.0) {
+        introJumpActive = true;
+        introJumpTimer = 0;
+        introJumpOffset = -40; // выше прыжок
+    }
+    if (introJumpActive) {
+        introJumpOffset += 0.7; // гравитация
+        if (introJumpOffset >= 0) {
+            introJumpOffset = 0;
+            introJumpActive = false;
+            introJumpTimer = 0; // сброс, чтобы начать новый цикл
+        }
+    }
+
+    introWalkTime += 0.15; // быстрее бег
+
+    // Рисуем персонажа
+    const px = 400 - PLAYER_W/2;
+    const py = introBaseY - PLAYER_H + introJumpOffset;
+
+    const skinColor = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
+    const clothColor = skinColor.color;
+    const headColor = '#f5cba7';
+    const legColor = '#e6b88a';
+
+    const headX = px + 6, headY = py, headW = 12, headH = 10;
+    const bodyX = px + 2, bodyY = py + 10, bodyW = 20, bodyH = 12;
+    const shortsX = px + 2, shortsY = py + 22, shortsW = 20, shortsH = 8;
+    const legW = 6, legH = 10;
+
+    ctx.fillStyle = headColor;
+    ctx.fillRect(headX, headY, headW, headH);
+
+    ctx.fillStyle = clothColor;
+    ctx.fillRect(headX - 2, headY - 4, headW + 4, 6);
+    ctx.fillRect(headX - 4, headY - 2, 6, 3);
+    ctx.fillRect(headX + headW - 2, headY - 2, 6, 3);
+    ctx.fillRect(headX + 2, headY - 6, 8, 3);
+
+    ctx.fillStyle = clothColor;
+    ctx.fillRect(bodyX, bodyY, bodyW, bodyH);
+    const darken = (col) => {
+        let r = parseInt(col.substring(1,3),16);
+        let g = parseInt(col.substring(3,5),16);
+        let b = parseInt(col.substring(5,7),16);
+        r = Math.max(0, r - 30);
+        g = Math.max(0, g - 30);
+        b = Math.max(0, b - 30);
+        return `rgb(${r},${g},${b})`;
+    };
+    ctx.fillStyle = darken(clothColor);
+    ctx.fillRect(shortsX, shortsY, shortsW, shortsH);
+
+    const legYBase = shortsY + shortsH;
+    const isJumping = introJumpActive;
+
+    if (isJumping) {
+        ctx.fillStyle = legColor;
+        ctx.fillRect(px + 4, legYBase, legW, legH);
+        ctx.fillRect(px + 14, legYBase - 6, legW, 6);
+    } else {
+        const phase = Math.sin(introWalkTime);
+        const leftOffsetX = 4 + phase * 4;
+        const leftOffsetY = (phase > 0) ? -2 : 2;
+        ctx.fillStyle = legColor;
+        ctx.fillRect(px + leftOffsetX, legYBase + leftOffsetY, legW, legH);
+        const rightOffsetX = 14 - phase * 4;
+        const rightOffsetY = (phase < 0) ? -2 : 2;
+        ctx.fillRect(px + rightOffsetX, legYBase + rightOffsetY, legW, legH);
+    }
+
+    // Неоновое название
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 64px "Press Start 2P", cursive';
+    ctx.fillStyle = '#0ff';
+    ctx.shadowColor = '#0ff';
+    ctx.shadowBlur = 30;
+    ctx.fillText('PixelMan', 400, 160);
+    ctx.shadowColor = '#f0f';
+    ctx.shadowBlur = 40;
+    ctx.fillText('PixelMan', 400, 160);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.strokeText('PixelMan', 400, 160);
+
+    // Подсказка
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '14px "Press Start 2P", cursive';
+    ctx.fillText('Кликни в любую точку', 400, 480);
+}
+
+// ============================================================
+//  ОТРИСОВКА ИГРЫ
+// ============================================================
+function draw() {
+    ctx.clearRect(0,0,800,500);
+    ctx.fillStyle = '#1a1a3a';
+    ctx.fillRect(0,0,800,500);
+
+    ctx.fillStyle = '#6a7a9a';
+    for (let p of platforms) {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = '#8a9aba';
+        ctx.fillRect(p.x+2, p.y-2, p.w-4, 4);
+        ctx.fillStyle = '#6a7a9a';
+    }
+
+    for (let c of coins) {
+        if (!c.collected) {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.radius, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffd700';
+            ctx.fill();
+            ctx.shadowColor = '#ffd70088';
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#fff7aa';
+            ctx.beginPath();
+            ctx.arc(c.x-3, c.y-4, 3, 0, 2*Math.PI);
+            ctx.fill();
+        }
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(doorX, 0, DOOR_W, DOOR_H);
+    const letters = ['В', 'Ы', 'Х', 'О', 'Д'];
+    const centerX = doorX + DOOR_W/2;
+    const startY = 120;
+    const stepY = 44;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 28px Arial';
+    ctx.fillStyle = '#000';
+    for (let i = 0; i < letters.length; i++) {
+        ctx.fillText(letters[i], centerX, startY + i*stepY);
+    }
+
+    const px = player.x;
+    const py = player.y;
+    const skinColor = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
+    const clothColor = skinColor.color;
+    const headColor = '#f5cba7';
+    const legColor = '#e6b88a';
+
+    const headX = px + 6, headY = py, headW = 12, headH = 10;
+    const bodyX = px + 2, bodyY = py + 10, bodyW = 20, bodyH = 12;
+    const shortsX = px + 2, shortsY = py + 22, shortsW = 20, shortsH = 8;
+    const legW = 6, legH = 10;
+
+    ctx.fillStyle = headColor;
+    ctx.fillRect(headX, headY, headW, headH);
+
+    ctx.fillStyle = clothColor;
+    ctx.fillRect(headX - 2, headY - 4, headW + 4, 6);
+    ctx.fillRect(headX - 4, headY - 2, 6, 3);
+    ctx.fillRect(headX + headW - 2, headY - 2, 6, 3);
+    ctx.fillRect(headX + 2, headY - 6, 8, 3);
+
+    ctx.fillStyle = clothColor;
+    ctx.fillRect(bodyX, bodyY, bodyW, bodyH);
+    const darken2 = (col) => {
+        let r = parseInt(col.substring(1,3),16);
+        let g = parseInt(col.substring(3,5),16);
+        let b = parseInt(col.substring(5,7),16);
+        r = Math.max(0, r - 30);
+        g = Math.max(0, g - 30);
+        b = Math.max(0, b - 30);
+        return `rgb(${r},${g},${b})`;
+    };
+    ctx.fillStyle = darken2(clothColor);
+    ctx.fillRect(shortsX, shortsY, shortsW, shortsH);
+
+    const legYBase = shortsY + shortsH;
+    const isMoving = Math.abs(player.vx) > 0.5 && player.onGround;
+    const isJumping = !player.onGround;
+
+    if (isJumping) {
+        ctx.fillStyle = legColor;
+        ctx.fillRect(px + 4, legYBase, legW, legH);
+        ctx.fillRect(px + 14, legYBase - 6, legW, 6);
+    } else if (isMoving) {
+        const phase = Math.sin(player.walkTime);
+        const leftOffsetX = 4 + phase * 4;
+        const leftOffsetY = (phase > 0) ? -2 : 2;
+        ctx.fillStyle = legColor;
+        ctx.fillRect(px + leftOffsetX, legYBase + leftOffsetY, legW, legH);
+        const rightOffsetX = 14 - phase * 4;
+        const rightOffsetY = (phase < 0) ? -2 : 2;
+        ctx.fillRect(px + rightOffsetX, legYBase + rightOffsetY, legW, legH);
+    } else {
+        ctx.fillStyle = legColor;
+        ctx.fillRect(px + 4, legYBase, legW, legH);
+        ctx.fillRect(px + 14, legYBase, legW, legH);
+    }
+}
+
+// ============================================================
+//  ГЛАВНЫЙ ЦИКЛ
+// ============================================================
+function gameLoop() {
+    if (introActive) {
+        drawIntro();
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (!gameRunning && !gameOverShown) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (gameOverShown) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+//  ФИНАЛ
+// ============================================================
+function showGameOver() {
+    gameRunning = false;
+    gameOverShown = true;
+    gameWrapper.style.display = 'block';
+    gameOverEl.style.display = 'flex';
+    document.getElementById('backToMenu').style.display = 'none';
+    menuEl.style.display = 'none';
+}
+
+// ============================================================
+//  TOAST
+// ============================================================
+function showToast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastEl._timeout);
+    toastEl._timeout = setTimeout(() => toastEl.classList.remove('show'), 2500);
+}
+
+// ============================================================
+//  КЛАВИШИ
+// ============================================================
+function handleKeyDown(e) {
+    const code = e.code;
+    if (code === 'KeyA' || code === 'ArrowLeft') { keys.left = true; e.preventDefault(); }
+    if (code === 'KeyD' || code === 'ArrowRight') { keys.right = true; e.preventDefault(); }
+    if (code === 'KeyW' || code === 'Space' || code === 'ArrowUp') { keys.jump = true; e.preventDefault(); }
+    if (code === 'KeyR') { if (gameRunning) restartLevel(); e.preventDefault(); }
+}
+function handleKeyUp(e) {
+    const code = e.code;
+    if (code === 'KeyA' || code === 'ArrowLeft') { keys.left = false; e.preventDefault(); }
+    if (code === 'KeyD' || code === 'ArrowRight') { keys.right = false; e.preventDefault(); }
+    if (code === 'KeyW' || code === 'Space' || code === 'ArrowUp') { keys.jump = false; e.preventDefault(); }
+}
+document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
+window.addEventListener('keydown', handleKeyDown);
+window.addEventListener('keyup', handleKeyUp);
+
+// ============================================================
+//  ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+window.onload = function() {
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    menuEl = document.getElementById('menu');
+    gameWrapper = document.getElementById('gameWrapper');
+    gameOverEl = document.getElementById('gameOver');
+    shopEl = document.getElementById('shop');
+    transferModal = document.getElementById('transferModal');
+    levelGrid = document.getElementById('levelGrid');
+    coinDisplay = document.getElementById('coinDisplay');
+    userIdDisplay = document.getElementById('userId');
+    syncStatus = document.getElementById('syncStatus');
+    toastEl = document.getElementById('toast');
+    afkBtnElement = document.getElementById('afkBtn');
+    afkTimerElement = document.getElementById('afkTimer');
+
+    loadGame();
+    updateUI();
+    renderShop();
+
+    loadCoinsFromFirebase();
+
+    document.getElementById('backToMenu').addEventListener('click', goToMenu);
+    document.getElementById('exitBtnMenu').addEventListener('click', () => { window.close(); });
+    document.getElementById('exitBtn').addEventListener('click', () => { window.close(); });
+    document.getElementById('shopBtn').addEventListener('click', () => {
+        menuEl.style.display = 'none';
+        shopEl.style.display = 'flex';
+        renderShop();
+    });
+    document.getElementById('closeShop').addEventListener('click', () => {
+        shopEl.style.display = 'none';
+        menuEl.style.display = 'flex';
+        updateUI();
+    });
+    document.getElementById('resetBtn').addEventListener('click', resetProgress);
+    afkBtnElement.addEventListener('click', toggleAfk);
+
+    document.getElementById('transferBtn').addEventListener('click', () => {
+        transferModal.style.display = 'flex';
+        document.getElementById('targetIdInput').value = '';
+        document.getElementById('amountInput').value = '';
+    });
+    document.getElementById('cancelTransferBtn').addEventListener('click', () => {
+        transferModal.style.display = 'none';
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target === transferModal) transferModal.style.display = 'none';
+    });
+    document.getElementById('sendTransferBtn').addEventListener('click', () => {
+        const target = document.getElementById('targetIdInput').value.trim();
+        const amount = parseInt(document.getElementById('amountInput').value);
+        transferCoins(target, amount);
+    });
+
+    // Обработчики клика для выхода из заставки
+    function exitIntro() {
+        if (introActive) {
+            introActive = false;
+            menuEl.style.display = 'flex';
+            gameWrapper.style.display = 'none'; // скрываем холст, чтобы меню не перекрывалось
+            gameRunning = false;
+            gameOverShown = false;
+            gameOverEl.style.display = 'none';
+            document.getElementById('backToMenu').style.display = 'none';
+        }
+    }
+
+    canvas.addEventListener('click', exitIntro);
+    canvas.addEventListener('pointerdown', exitIntro); // для тач-устройств
+
+    // Изначально показываем canvas, меню скрыто
+    menuEl.style.display = 'none';
+    gameWrapper.style.display = 'block';
+    gameOverEl.style.display = 'none';
+    shopEl.style.display = 'none';
+    transferModal.style.display = 'none';
+    document.getElementById('backToMenu').style.display = 'none';
+
+    window._loopStarted = false;
+    requestAnimationFrame(gameLoop);
+};
+
+function goToMenu() {
+    gameRunning = false;
+    gameOverShown = false;
+    if (afkActive) stopAfk();
+    gameWrapper.style.display = 'block';
+    gameOverEl.style.display = 'none';
+    shopEl.style.display = 'none';
+    transferModal.style.display = 'none';
+    menuEl.style.display = 'flex';
+    document.getElementById('backToMenu').style.display = 'none';
+    updateUI();
+    keys = {left:false, right:false, jump:false};
+    player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
+}
+
+function resetProgress() {
+    if (!confirm('Сбросить прогресс уровней?\nМонеты и скины останутся.')) return;
+    gameData.maxLevel = 1;
+    gameData.completedLevels = [];
+    saveGame();
+    if (gameRunning || gameOverShown) {
+        goToMenu();
+    }
+    updateUI();
+    showToast('Прогресс уровней сброшен!');
+}
+</script>
+</body>
+</html>
