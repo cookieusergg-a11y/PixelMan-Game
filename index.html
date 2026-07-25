@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>PixelMan</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
+        /* все стили без изменений – смотри выше */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; }
         #app {
@@ -253,7 +255,7 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ДАННЫЕ УРОВНЕЙ
+//  ДАННЫЕ УРОВНЕЙ (без изменений)
 // ============================================================
 const LEVELS = [];
 function makeLevel(platforms, coins, playerX, playerY, doorX) {
@@ -342,31 +344,46 @@ function generateUserId() {
 }
 
 // ============================================================
-//  ЗАГРУЗКА / СОХРАНЕНИЕ (ИСПРАВЛЕНО)
+//  ЗАГРУЗКА / СОХРАНЕНИЕ (С ЛОГАМИ)
 // ============================================================
 function loadGame() {
+    console.log('[loadGame] Загружаем данные из localStorage');
     const raw = localStorage.getItem(STORAGE_KEY);
+    console.log('[loadGame] raw данные из localStorage:', raw);
     if (raw) {
         try {
             const parsed = JSON.parse(raw);
-            if (parsed.userId) gameData.userId = parsed.userId;
+            console.log('[loadGame] распарсенные данные:', parsed);
+            if (parsed.userId) {
+                gameData.userId = parsed.userId;
+                console.log('[loadGame] userId найден:', gameData.userId);
+            }
             if (parsed.maxLevel !== undefined) gameData.maxLevel = parsed.maxLevel;
             if (parsed.coins !== undefined) gameData.coins = parsed.coins;
             if (parsed.ownedSkins) gameData.ownedSkins = parsed.ownedSkins;
             if (parsed.activeSkin !== undefined) gameData.activeSkin = parsed.activeSkin;
             if (parsed.completedLevels) gameData.completedLevels = parsed.completedLevels;
             if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
-        } catch(e) {}
+        } catch(e) {
+            console.error('[loadGame] Ошибка парсинга:', e);
+        }
+    } else {
+        console.log('[loadGame] localStorage пуст');
     }
+    console.log('[loadGame] после загрузки userId:', gameData.userId);
     if (!gameData.userId) {
+        console.log('[loadGame] userId отсутствует, генерируем новый');
         gameData.userId = generateUserId();
-        saveGame(); // <-- СОХРАНЯЕМ СРАЗУ, ЧТОБЫ ID НЕ ТЕРЯЛСЯ
+        saveGame();
+        console.log('[loadGame] новый userId сгенерирован и сохранён:', gameData.userId);
     }
     if (!gameData.completedLevels) gameData.completedLevels = [];
 }
 
 function saveGame() {
+    console.log('[saveGame] сохраняем данные:', gameData);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameData));
+    console.log('[saveGame] сохранено в localStorage');
 }
 
 // ============================================================
@@ -729,7 +746,7 @@ function restartLevel() {
 }
 
 // ============================================================
-//  ОТРИСОВКА ЗАСТАВКИ
+//  ОТРИСОВКА ЗАСТАВКИ (без изменений)
 // ============================================================
 function drawIntro() {
     ctx.clearRect(0, 0, 800, 500);
@@ -874,7 +891,7 @@ function drawIntro() {
 }
 
 // ============================================================
-//  ОТРИСОВКА ИГРЫ
+//  ОТРИСОВКА ИГРЫ (без изменений)
 // ============================================================
 function draw() {
     ctx.clearRect(0,0,800,500);
@@ -1063,6 +1080,7 @@ window.onload = function() {
     afkBtnElement = document.getElementById('afkBtn');
     afkTimerElement = document.getElementById('afkTimer');
 
+    console.log('=== ЗАПУСК ИГРЫ ===');
     loadGame();
     updateUI();
     renderShop();
