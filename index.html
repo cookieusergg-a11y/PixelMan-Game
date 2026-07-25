@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
+        /* Стили без изменений (такие же как в v1.5) */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; touch-action: manipulation; }
         #app { background: #12122a; border-radius: 16px; padding: 16px; box-shadow: 0 0 40px #2a2a6a; position: relative; width: 100%; max-width: 820px; margin: 0 auto; }
@@ -98,13 +99,13 @@
         @media (max-width: 600px) { .touch-controls .left-right button { width: 60px; height: 60px; font-size: 24px; } .touch-controls .jump-btn { width: 80px; height: 80px; font-size: 30px; margin-left: -10px; } }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: clamp(12px, 2.5vw, 18px); border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-family: 'Press Start 2P', cursive; }
         .toast.show { opacity: 1; }
-        .banned-msg { color: #ff4444; font-size: clamp(20px, 4vw, 40px); text-align: center; padding: 20px; font-family: 'Press Start 2P', cursive; }
     </style>
 </head>
 <body>
 <div id="app">
+    <!-- Меню -->
     <div class="menu" id="menu">
-        <div class="version">v1.5</div>
+        <div class="version">v1.6</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -232,7 +233,7 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (С ИСПРАВЛЕННЫМ СПАВНОМ)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
@@ -242,12 +243,18 @@ function generateLevels(count) {
         const baseY = 440 - (i % 5) * 5 - Math.floor(i / 8) * 3;
         const platCount = 4 + (i % 5) + Math.floor(i / 6);
         const platforms = [];
-        let cx = 30;
+
+        // СТАРТОВАЯ ПЛАТФОРМА (под игроком)
+        const startPlat = { x: 10, y: baseY, w: 70, h: 16 };
+        platforms.push(startPlat);
+
+        let cx = startPlat.x + startPlat.w;
         let cy = baseY;
         const maxX = 760;
         const minGap = 70;
         const maxGap = 130;
 
+        // Остальные платформы
         for (let j = 0; j < platCount; j++) {
             const w = 50 + Math.floor(r() * 30);
             const h = 16;
@@ -260,13 +267,16 @@ function generateLevels(count) {
             cx += w;
             cy = py;
         }
+
+        // Гарантируем минимум ещё 2 платформы
         while (platforms.length < 3) {
-            const last = platforms[platforms.length - 1] || { x: 30, y: baseY, w: 50 };
+            const last = platforms[platforms.length - 1];
             const newX = last.x + last.w + 80;
             const newY = Math.min(440, Math.max(300, last.y + (Math.random() * 40 - 20)));
             platforms.push({ x: newX, y: newY, w: 60, h: 16 });
         }
 
+        // Монеты
         const coinPositions = [];
         for (let j = 0; j < platforms.length; j++) {
             if (j % 2 === 0 || r() > 0.5) {
@@ -284,8 +294,11 @@ function generateLevels(count) {
             coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
         }
 
-        const playerX = 30;
-        const playerY = platforms[0].y - PLAYER_H;
+        // Игрок – на стартовой платформе
+        const playerX = startPlat.x + 10;
+        const playerY = startPlat.y - PLAYER_H;
+
+        // Дверь – после последней платформы
         const lastPlat = platforms[platforms.length - 1];
         let doorX = Math.min(lastPlat.x + lastPlat.w + 60, 780);
         if (doorX < 700) doorX = 700;
@@ -356,7 +369,7 @@ let touchControls, touchLeft, touchRight, touchJump;
 let coinCollectCooldown = false;
 
 // ============================================================
-//  АНТИ-ЧИТ: МОНИТОРИНГ СКОРОСТИ МОНЕТ
+//  АНТИ-ЧИТ
 // ============================================================
 let coinHistory = [];
 
@@ -393,7 +406,7 @@ function banAccount(reason) {
 }
 
 // ============================================================
-//  ФУНКЦИИ ДЛЯ АПГРЕЙДОВ
+//  ФУНКЦИИ АПГРЕЙДОВ
 // ============================================================
 function getTotalMultiplier() {
     const skin = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
@@ -425,14 +438,14 @@ function canBuyAfk() {
 }
 
 // ============================================================
-//  ГЕНЕРАЦИЯ ID (запасной)
+//  ID
 // ============================================================
 function generateUserId() {
     return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 }
 
 // ============================================================
-//  ЗАГРУЗКА / СОХРАНЕНИЕ
+//  СОХРАНЕНИЕ / ЗАГРУЗКА
 // ============================================================
 function saveGameToFirebase() {
     if (!currentUser) return;
@@ -512,7 +525,7 @@ function signInAnonymously() {
 }
 
 // ============================================================
-//  ОБНОВЛЕНИЕ UI
+//  UI
 // ============================================================
 function updateUI() {
     if (gameData.banned) return;
@@ -529,9 +542,6 @@ function setSyncStatus(ok) {
     }
 }
 
-// ============================================================
-//  МЕНЮ
-// ============================================================
 function buildMenu() {
     if (gameData.banned) return;
     levelGrid.innerHTML = '';
@@ -635,7 +645,7 @@ function renderShop() {
 }
 
 // ============================================================
-//  UI УЛУЧШЕНИЙ
+//  УЛУЧШЕНИЯ
 // ============================================================
 function updateUpgradeUI() {
     if (gameData.banned) return;
@@ -678,7 +688,7 @@ function buyAfkUpgrade() {
 }
 
 // ============================================================
-//  ПЕРЕДАЧА МОНЕТ
+//  ПЕРЕДАЧА
 // ============================================================
 function transferCoins(targetId, amount) {
     if (gameData.banned) return;
@@ -735,7 +745,7 @@ function transferCoins(targetId, amount) {
 }
 
 // ============================================================
-//  AFK-ФАРМ
+//  AFK
 // ============================================================
 function startAfk() {
     if (gameData.banned) return;
@@ -805,7 +815,8 @@ function startLevel(index) {
     }
     platforms = level.platforms.map(p => ({...p}));
     doorX = level.doorX;
-    player.x = level.playerX; player.y = level.playerY;
+    player.x = level.playerX;
+    player.y = level.playerY;
     player.vx = 0; player.vy = 0; player.onGround = false;
     player.walkTime = 0;
     coins = level.coins.map(c => ({x:c.x, y:c.y, radius:10, collected:false}));
@@ -1288,9 +1299,6 @@ function setupTouchControls() {
     addTouchListeners(touchJump, 'jump');
 }
 
-// ============================================================
-//  ПОКАЗАТЬ ВЫБОР УСТРОЙСТВА
-// ============================================================
 function showDeviceSelect() {
     deviceSelectEl.style.display = 'flex';
     menuEl.style.display = 'none';
