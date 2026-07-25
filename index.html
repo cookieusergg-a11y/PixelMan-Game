@@ -88,9 +88,9 @@
         .skin-card button.active-btn { background: #4a8a5a; }
         #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); z-index: 10; }
         #backToMenu:hover { background: #555; }
-        .game-wrapper { position: relative; display: block; }
+        .game-wrapper { position: relative; display: none; }
         .touch-controls {
-            display: none;
+            display: none !important; /* всегда скрыты, показываются только в startLevel */
             position: absolute;
             bottom: 20px;
             left: 0;
@@ -100,11 +100,8 @@
             justify-content: space-between;
             pointer-events: none;
         }
-        .touch-controls .left-right {
-            display: flex;
-            gap: 20px;
-            pointer-events: auto;
-        }
+        .touch-controls.active { display: flex !important; }
+        .touch-controls .left-right { display: flex; gap: 20px; pointer-events: auto; }
         .touch-controls .left-right button,
         .touch-controls .jump-btn {
             width: 70px;
@@ -125,16 +122,10 @@
             pointer-events: auto;
         }
         .touch-controls .left-right button:active,
-        .touch-controls .jump-btn:active {
-            background: rgba(255,255,255,0.5);
-        }
+        .touch-controls .jump-btn:active { background: rgba(255,255,255,0.5); }
         @media (max-width: 600px) {
             .touch-controls .left-right button,
-            .touch-controls .jump-btn {
-                width: 60px;
-                height: 60px;
-                font-size: 24px;
-            }
+            .touch-controls .jump-btn { width: 60px; height: 60px; font-size: 24px; }
         }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: clamp(12px, 2.5vw, 18px); border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-family: 'Press Start 2P', cursive; }
         .toast.show { opacity: 1; }
@@ -143,7 +134,7 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v1.9</div>
+        <div class="version">v2.1</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -791,6 +782,12 @@ function startLevel(index) {
     gameWrapper.style.display = 'block';
     gameOverEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'block';
+    // Показываем сенсорные кнопки только если включен мобильный режим
+    if (useMobileLayout) {
+        touchControls.classList.add('active');
+    } else {
+        touchControls.classList.remove('active');
+    }
     keys = {left:false, right:false, jump:false};
     if (!window._loopStarted) { window._loopStarted = true; requestAnimationFrame(gameLoop); }
     canvas.focus();
@@ -1112,11 +1109,12 @@ function gameLoop() {
 function showGameOver() {
     gameRunning = false;
     gameOverShown = true;
-    gameWrapper.style.display = 'block';
+    gameWrapper.style.display = 'none';
     gameOverEl.style.display = 'flex';
     document.getElementById('backToMenu').style.display = 'none';
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
+    touchControls.classList.remove('active');
 }
 function showToast(text) {
     toastEl.textContent = text;
@@ -1159,8 +1157,7 @@ function loadDeviceMode() {
 }
 function saveDeviceMode(mode) { localStorage.setItem('deviceMode', mode); }
 function setupTouchControls() {
-    if (!useMobileLayout) { touchControls.style.display = 'none'; return; }
-    touchControls.style.display = 'flex';
+    // Кнопки показываются только в игре, поэтому здесь только настраиваем слушатели
     function addTouchListeners(btn, keyOn, keyOff) {
         btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyOn] = true; });
         btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyOn] = false; if (keyOff) keys[keyOff] = false; });
@@ -1205,6 +1202,9 @@ window.onload = function() {
     touchLeft = document.getElementById('touchLeft');
     touchRight = document.getElementById('touchRight');
     touchJump = document.getElementById('touchJump');
+
+    // всегда скрываем кнопки при старте
+    touchControls.classList.remove('active');
 
     const hasDeviceMode = loadDeviceMode();
     setupTouchControls();
@@ -1300,7 +1300,7 @@ window.onload = function() {
     introActive = true;
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
-    gameWrapper.style.display = 'block';
+    gameWrapper.style.display = 'none';
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
     transferModal.style.display = 'none';
@@ -1315,7 +1315,7 @@ function goToMenu() {
     gameRunning = false;
     gameOverShown = false;
     if (afkActive) stopAfk();
-    gameWrapper.style.display = 'block';
+    gameWrapper.style.display = 'none';
     gameOverEl.style.display = 'none';
     shopEl.style.display = 'none';
     transferModal.style.display = 'none';
@@ -1323,6 +1323,7 @@ function goToMenu() {
     menuEl.style.display = 'flex';
     deviceSelectEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
+    touchControls.classList.remove('active');
     updateUI();
     updateUpgradeUI();
     keys = {left:false, right:false, jump:false};
