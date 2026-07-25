@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* Все стили без изменений – оставляю как в v2.3 */
+        /* Все стили без изменений (такие же как в v3.2) */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; touch-action: manipulation; }
         #app { background: #12122a; border-radius: 16px; padding: 16px; box-shadow: 0 0 40px #2a2a6a; position: relative; width: 100%; max-width: 820px; margin: 0 auto; }
@@ -110,7 +110,7 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v3.0</div>
+        <div class="version">v3.3</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -146,7 +146,6 @@
         <button class="close-shop" id="closeShop">Закрыть</button>
     </div>
 
-    <!-- Админ-панель -->
     <div class="modal" id="adminModal">
         <div class="modal-content">
             <h2>🔧 Админ-панель</h2>
@@ -259,16 +258,14 @@ const MAX_AFK_LEVEL = 10;
 const ADMIN_UIDS = ['KDUCqREFAPM8lJxbHT7FzcVjXcm2', 'PTeDx5viMvNizIzJgKVraXtqCeC3'];
 
 // ============================================================
-//  НОВЫЕ СКИНЫ (15 штук)
+//  СКИНЫ (15 штук)
 // ============================================================
 const SKINS = [
-    // старые 5
     { id:0, name:'Белая', color:'#ffffff', price:0, multiplier:1 },
     { id:1, name:'Красная', color:'#c0392b', price:80, multiplier:1.5 },
     { id:2, name:'Синяя', color:'#2980b9', price:150, multiplier:2 },
     { id:3, name:'Зелёная', color:'#27ae60', price:300, multiplier:3 },
     { id:4, name:'Золотая', color:'#f1c40f', price:800, multiplier:5 },
-    // новые 10
     { id:5, name:'Неоновая', color:'#ff00ff', price:1200, multiplier:8 },
     { id:6, name:'Космическая', color:'#0a0a3a', price:2000, multiplier:12 },
     { id:7, name:'Огненная', color:'#ff5500', price:3500, multiplier:20 },
@@ -282,14 +279,12 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ 50 УНИКАЛЬНЫХ УРОВНЕЙ (возрастающая сложность)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (50 уникальных)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
     for (let i = 0; i < count; i++) {
-        // Сложность: от 0 до 1
-        const difficulty = i / count; // 0..0.98
-        // Количество платформ: от 4 до 10
+        const difficulty = i / count;
         const platCount = 4 + Math.floor(difficulty * 6) + Math.floor(Math.random() * 2);
         const baseY = 440 - Math.floor(difficulty * 40);
         const minGap = 70 - Math.floor(difficulty * 20);
@@ -390,19 +385,35 @@ let useMobileLayout = false;
 let isAdmin = false;
 
 // ============================================================
-//  АНТИ-ЧИТ
+//  АНТИ-ЧИТ (ПОРОГ 10 000 000)
 // ============================================================
 let coinHistory = [];
+let lastWarningTime = 0;
+
 function checkCoinRate(amount) {
+    if (isAdmin) {
+        coinHistory = [];
+        return false;
+    }
     coinHistory.push({ amount, time: Date.now() });
     coinHistory = coinHistory.filter(entry => Date.now() - entry.time < 5000);
     const total = coinHistory.reduce((sum, e) => sum + e.amount, 0);
-    if (total > 1000) {
-        banAccount('Слишком быстрый набор монет (читерство)');
-        return true;
+    const threshold = 10000000; // 10 млн за 5 секунд
+    if (total > threshold) {
+        const now = Date.now();
+        if (lastWarningTime > 0 && (now - lastWarningTime) < 30000) {
+            banAccount('Слишком быстрый набор монет (читерство)');
+            return true;
+        } else {
+            showToast('⚠️ Подозрительная активность! При повторном превышении лимита аккаунт будет заблокирован.');
+            lastWarningTime = now;
+            coinHistory = [];
+            return false;
+        }
     }
     return false;
 }
+
 function banAccount(reason) {
     if (!currentUser) return;
     db.ref('users/' + currentUser.uid + '/banned').set(true);
@@ -529,7 +540,6 @@ function loadGameFromFirebase() {
             if (!gameData.ownedSkins.includes(0)) gameData.ownedSkins.push(0);
             if (gameData.warning) {
                 showToast('⚠️ ' + gameData.warning);
-                // очистим после показа
                 db.ref('users/' + currentUser.uid + '/warning').remove();
                 gameData.warning = '';
             }
@@ -539,7 +549,6 @@ function loadGameFromFirebase() {
         updateUI();
         setSyncStatus(true);
         updateUpgradeUI();
-        // Проверка админа
         if (ADMIN_UIDS.includes(currentUser.uid)) {
             isAdmin = true;
             document.getElementById('adminBtn').style.display = 'inline-block';
@@ -1317,7 +1326,6 @@ window.onload = function() {
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     afkBtnElement.addEventListener('click', toggleAfk);
 
-    // Админ-панель
     document.getElementById('adminBtn').addEventListener('click', () => {
         if (!isAdmin) return;
         adminModal.style.display = 'flex';
