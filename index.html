@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>PixelMan</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
@@ -343,7 +342,7 @@ function generateUserId() {
 }
 
 // ============================================================
-//  ЗАГРУЗКА / СОХРАНЕНИЕ
+//  ЗАГРУЗКА / СОХРАНЕНИЕ (ИСПРАВЛЕНО)
 // ============================================================
 function loadGame() {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -361,6 +360,7 @@ function loadGame() {
     }
     if (!gameData.userId) {
         gameData.userId = generateUserId();
+        saveGame(); // <-- СОХРАНЯЕМ СРАЗУ, ЧТОБЫ ID НЕ ТЕРЯЛСЯ
     }
     if (!gameData.completedLevels) gameData.completedLevels = [];
 }
@@ -729,19 +729,17 @@ function restartLevel() {
 }
 
 // ============================================================
-//  ОТРИСОВКА ЗАСТАВКИ (ИСПРАВЛЕНА)
+//  ОТРИСОВКА ЗАСТАВКИ
 // ============================================================
 function drawIntro() {
     ctx.clearRect(0, 0, 800, 500);
 
-    // Фон
     const grad = ctx.createLinearGradient(0, 0, 0, 500);
     grad.addColorStop(0, '#0a0a2a');
     grad.addColorStop(1, '#1a1a3a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 800, 500);
 
-    // Звёзды
     ctx.fillStyle = '#ffffff';
     for (let i = 0; i < 80; i++) {
         const sx = (i * 37) % 800;
@@ -752,7 +750,6 @@ function drawIntro() {
     }
     ctx.globalAlpha = 1.0;
 
-    // Генерация блоков
     if (introBlocks.length === 0) {
         for (let i = 0; i < 8; i++) {
             const x = 100 + i * 120 + Math.random() * 40;
@@ -762,7 +759,6 @@ function drawIntro() {
         }
     }
 
-    // Сдвиг блоков
     for (let b of introBlocks) {
         b.x -= introSpeed;
     }
@@ -778,7 +774,6 @@ function drawIntro() {
         introBlocks.push({ x: 800, y: introBaseY - 20, w: 60, h:16 });
     }
 
-    // Рисуем блоки
     ctx.fillStyle = '#6a7a9a';
     for (let b of introBlocks) {
         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -787,25 +782,23 @@ function drawIntro() {
         ctx.fillStyle = '#6a7a9a';
     }
 
-    // Анимация прыжка (чаще и выше)
-    introJumpTimer += 1/60; // ~60 FPS
+    introJumpTimer += 1/60;
     if (!introJumpActive && introJumpTimer > 1.5 + Math.random() * 1.0) {
         introJumpActive = true;
         introJumpTimer = 0;
-        introJumpOffset = -40; // выше прыжок
+        introJumpOffset = -40;
     }
     if (introJumpActive) {
-        introJumpOffset += 0.7; // гравитация
+        introJumpOffset += 0.7;
         if (introJumpOffset >= 0) {
             introJumpOffset = 0;
             introJumpActive = false;
-            introJumpTimer = 0; // сброс, чтобы начать новый цикл
+            introJumpTimer = 0;
         }
     }
 
-    introWalkTime += 0.15; // быстрее бег
+    introWalkTime += 0.15;
 
-    // Рисуем персонажа
     const px = 400 - PLAYER_W/2;
     const py = introBaseY - PLAYER_H + introJumpOffset;
 
@@ -860,7 +853,6 @@ function drawIntro() {
         ctx.fillRect(px + rightOffsetX, legYBase + rightOffsetY, legW, legH);
     }
 
-    // Неоновое название
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 64px "Press Start 2P", cursive';
@@ -876,7 +868,6 @@ function drawIntro() {
     ctx.lineWidth = 2;
     ctx.strokeText('PixelMan', 400, 160);
 
-    // Подсказка
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = '14px "Press Start 2P", cursive';
     ctx.fillText('Кликни в любую точку', 400, 480);
@@ -1111,12 +1102,11 @@ window.onload = function() {
         transferCoins(target, amount);
     });
 
-    // Обработчики клика для выхода из заставки
     function exitIntro() {
         if (introActive) {
             introActive = false;
             menuEl.style.display = 'flex';
-            gameWrapper.style.display = 'none'; // скрываем холст, чтобы меню не перекрывалось
+            gameWrapper.style.display = 'none';
             gameRunning = false;
             gameOverShown = false;
             gameOverEl.style.display = 'none';
@@ -1125,9 +1115,8 @@ window.onload = function() {
     }
 
     canvas.addEventListener('click', exitIntro);
-    canvas.addEventListener('pointerdown', exitIntro); // для тач-устройств
+    canvas.addEventListener('pointerdown', exitIntro);
 
-    // Изначально показываем canvas, меню скрыто
     menuEl.style.display = 'none';
     gameWrapper.style.display = 'block';
     gameOverEl.style.display = 'none';
