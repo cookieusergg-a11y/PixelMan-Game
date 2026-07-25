@@ -174,9 +174,8 @@
 </head>
 <body>
 <div id="app">
-    <!-- Меню -->
     <div class="menu" id="menu">
-        <div class="version">v4.1</div>
+        <div class="version">v4.2</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -198,7 +197,6 @@
         </div>
     </div>
 
-    <!-- Выбор устройства -->
     <div id="deviceSelect">
         <h2>Выберите устройство</h2>
         <div class="device-buttons">
@@ -207,14 +205,12 @@
         </div>
     </div>
 
-    <!-- Магазин -->
     <div class="shop" id="shop">
         <h2>🏪 Магазин скинов</h2>
         <div class="shop-grid" id="skinGrid"></div>
         <button class="close-shop" id="closeShop">Закрыть</button>
     </div>
 
-    <!-- Админ-панель -->
     <div class="modal" id="adminModal">
         <div class="modal-content">
             <h2>🔧 Админ-панель</h2>
@@ -241,7 +237,6 @@
         </div>
     </div>
 
-    <!-- Улучшения -->
     <div class="modal" id="upgradeModal">
         <div class="modal-content">
             <h2>⬆ Улучшения</h2>
@@ -261,7 +256,6 @@
         </div>
     </div>
 
-    <!-- Передача монет -->
     <div class="modal" id="transferModal">
         <div class="modal-content">
             <h2>📤 Передача монет</h2>
@@ -276,7 +270,6 @@
         </div>
     </div>
 
-    <!-- Игровой контейнер -->
     <div class="game-wrapper" id="gameWrapper">
         <canvas id="gameCanvas" width="800" height="500"></canvas>
         <button id="backToMenu">← Меню</button>
@@ -289,7 +282,6 @@
         </div>
     </div>
 
-    <!-- Финальный экран -->
     <div id="gameOver">
         <h2>Игра Окончена..</h2>
         <p>может быть..</p>
@@ -352,19 +344,22 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (С УВЕЛИЧЕННОЙ ШИРИНОЙ ПЛАТФОРМ)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (ОЧЕНЬ ЛЕГКАЯ)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
     for (let i = 0; i < count; i++) {
-        const difficulty = Math.pow(i / count, 1.5);
-        const platCount = 4 + Math.floor(difficulty * 8) + Math.floor(Math.random() * 2);
-        const baseY = 440 - Math.floor(difficulty * 50);
-        const minGap = 60 - Math.floor(difficulty * 30);
-        const maxGap = 130 - Math.floor(difficulty * 20) + 10;
+        // Сложность почти не растёт
+        const difficulty = i / count * 0.4; // макс 0.4
+        // Количество платформ: от 4 до 6
+        const platCount = 4 + Math.floor(difficulty * 2) + Math.floor(Math.random() * 1);
+        const baseY = 440 - Math.floor(difficulty * 20);
+        // Разрывы маленькие
+        const minGap = 50;
+        const maxGap = 90;
         const platforms = [];
-        // Стартовая платформа – шире
-        const startPlat = { x: 10, y: baseY, w: 90, h: 16 };
+        // Стартовая платформа – широкая
+        const startPlat = { x: 10, y: baseY, w: 100, h: 16 };
         platforms.push(startPlat);
         let cx = startPlat.x + startPlat.w;
         let cy = baseY;
@@ -372,34 +367,38 @@ function generateLevels(count) {
         const rng = (seed) => { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
         const r = rng(i * 137 + 42);
         for (let j = 0; j < platCount; j++) {
-            // Увеличиваем ширину: минимум 50, максимум 50+40+15 = 105
-            const w = 50 + Math.floor(r() * 40) + Math.floor(difficulty * 15);
+            // Ширина платформ: 60-100
+            const w = 60 + Math.floor(r() * 40);
             const h = 16;
-            const yOffset = Math.floor(r() * 50 - 25) - Math.floor(difficulty * 30);
-            const py = Math.min(445, Math.max(280, cy + yOffset));
-            const gap = Math.floor((minGap + r() * (maxGap - minGap)) + difficulty * 30);
+            // Вертикальный перепад маленький
+            const yOffset = Math.floor(r() * 30 - 15) - Math.floor(difficulty * 10);
+            const py = Math.min(445, Math.max(300, cy + yOffset));
+            // Разрыв без дополнительного увеличения сложности
+            const gap = minGap + Math.floor(r() * (maxGap - minGap));
             cx += gap;
             if (cx + w > maxX) break;
             platforms.push({ x: cx, y: py, w, h });
             cx += w;
             cy = py;
         }
+        // Гарантируем минимум 3 платформы после стартовой
         while (platforms.length < 4) {
             const last = platforms[platforms.length - 1];
-            const newX = last.x + last.w + 90 + Math.floor(difficulty * 50);
-            const newY = Math.min(445, Math.max(280, last.y + (Math.random() * 50 - 25) - difficulty * 30));
+            const newX = last.x + last.w + 80;
+            const newY = Math.min(445, Math.max(300, last.y + (Math.random() * 30 - 15) - difficulty * 10));
             platforms.push({ x: newX, y: newY, w: 70, h: 16 });
         }
+        // Монеты – немного
         const coinPositions = [];
         for (let j = 1; j < platforms.length; j++) {
-            if (j % 2 === 0 || r() > 0.5 - difficulty * 0.3) {
+            if (j % 2 === 0 || r() > 0.6) {
                 const p = platforms[j];
                 const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
                 const coinY = p.y - 15 - Math.random() * 10;
                 coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
             }
         }
-        const extraCount = Math.floor(platCount * 0.6) + Math.floor(difficulty * 4);
+        const extraCount = Math.floor(platCount * 0.3);
         for (let j = 0; j < extraCount; j++) {
             const idx = Math.floor(r() * platforms.length);
             if (idx === 0) continue;
@@ -411,7 +410,7 @@ function generateLevels(count) {
         const playerX = startPlat.x + 10;
         const playerY = startPlat.y - PLAYER_H;
         const lastPlat = platforms[platforms.length - 1];
-        let doorX = Math.min(lastPlat.x + lastPlat.w + 80 + Math.floor(difficulty * 40), 780);
+        let doorX = Math.min(lastPlat.x + lastPlat.w + 70, 780);
         if (doorX < 700) doorX = 700;
         levels.push({
             platforms: platforms,
@@ -672,7 +671,6 @@ function signInAnonymously() {
             }
             userIdDisplay.textContent = gameData.userId;
             updateUI();
-            // Если ошибка, но introActive ещё true, покажем меню, чтобы не зависнуть
             if (introActive) {
                 introActive = false;
                 menuEl.style.display = 'flex';
@@ -960,7 +958,6 @@ function startLevel(index) {
     gameOverEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'block';
 
-    // Показываем game-wrapper и убираем hidden
     gameWrapper.classList.remove('hidden');
     gameWrapper.classList.remove('mobile', 'pc');
     if (useMobileLayout) {
@@ -1499,7 +1496,6 @@ window.onload = function() {
     function exitIntro() {
         if (introActive) {
             introActive = false;
-            // Скрываем game-wrapper полностью
             gameWrapper.classList.add('hidden');
             gameWrapper.classList.remove('mobile', 'pc');
             touchControls.classList.remove('active');
@@ -1519,7 +1515,7 @@ window.onload = function() {
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
 
-    // Начальное состояние: заставка видна, меню скрыто, game-wrapper виден (без hidden)
+    // Начальное состояние: заставка видна, меню скрыто, game-wrapper виден
     introActive = true;
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
