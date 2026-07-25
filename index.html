@@ -13,7 +13,7 @@
         body { background: #0a0a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; touch-action: manipulation; }
         #app { background: #12122a; border-radius: 16px; padding: 16px; box-shadow: 0 0 40px #2a2a6a; position: relative; width: 100%; max-width: 820px; margin: 0 auto; }
         canvas { display: block; margin: 0 auto; background: #1a1a3a; border-radius: 10px; width: 100%; height: auto; aspect-ratio: 8 / 5; cursor: pointer; touch-action: none; position: relative; z-index: 1; }
-        .menu { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 20px; min-width: 280px; width: 100%; position: relative; }
+        .menu { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 20px; min-width: 280px; width: 100%; position: relative; overflow: visible; }
         .menu .version { position: absolute; top: 10px; right: 20px; font-family: 'Press Start 2P', cursive; color: #666; font-size: 12px; opacity: 0.6; }
         .menu h1 { font-family: 'Press Start 2P', cursive; font-size: clamp(24px, 6vw, 48px); color: #fff; text-shadow: 0 0 20px #5af, 0 0 40px #3af; letter-spacing: 4px; margin-bottom: 5px; text-align: center; }
         .menu .profile { display: flex; flex-wrap: wrap; justify-content: space-between; width: 100%; max-width: 420px; color: #aaa; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2.5vw, 14px); background: #1a1a3a; padding: 8px 16px; border-radius: 30px; border: 1px solid #3a3a6a; gap: 5px; }
@@ -26,7 +26,7 @@
         .level-btn.unlocked:hover { background: #4a9ed5; transform: scale(1.05); }
         .level-btn.locked { background: #2a2a3a; color: #555; cursor: not-allowed; opacity: 0.5; }
         .level-btn.completed { background: #4a8a5a; color: #cfc; box-shadow: 0 4px 0 #2a5a3a; }
-        .menu-actions { display: flex; gap: 12px; margin-top: 5px; flex-wrap: wrap; justify-content: center; }
+        .menu-actions { display: flex; gap: 12px; margin-top: 5px; flex-wrap: wrap; justify-content: center; width: 100%; }
         .menu-actions button { padding: 10px 20px; font-size: clamp(10px, 2vw, 14px); border: none; border-radius: 30px; background: #2a2a5a; color: #fff; cursor: pointer; transition: 0.2s; font-family: 'Press Start 2P', cursive; }
         .menu-actions button:hover { background: #3a3a7a; transform: scale(1.03); }
         .menu-actions .shop-btn { background: #8a6a2a; }
@@ -37,7 +37,7 @@
         .menu-actions .transfer-btn:hover { background: #3a8a8a; }
         .menu-actions .upgrade-btn { background: #4a2a6a; }
         .menu-actions .upgrade-btn:hover { background: #6a3a8a; }
-        .afk-area { display: flex; align-items: center; gap: 15px; background: #1a1a3a; padding: 8px 20px; border-radius: 40px; border: 1px solid #4a4a7a; flex-wrap: wrap; justify-content: center; }
+        .afk-area { display: flex; align-items: center; gap: 15px; background: #1a1a3a; padding: 8px 20px; border-radius: 40px; border: 1px solid #4a4a7a; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 420px; }
         .afk-btn { background: #2a6a3a; color: #fff; border: none; padding: 8px 20px; border-radius: 30px; font-size: clamp(10px, 2vw, 16px); cursor: pointer; transition: 0.2s; font-weight: bold; font-family: 'Press Start 2P', cursive; }
         .afk-btn.active { background: #6a3a2a; }
         .afk-btn:hover { transform: scale(1.05); }
@@ -89,13 +89,53 @@
         #backToMenu { position: absolute; top: 20px; left: 20px; padding: 6px 14px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); z-index: 10; }
         #backToMenu:hover { background: #555; }
         .game-wrapper { position: relative; display: block; }
-        .touch-controls { display: none; position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 10px; z-index: 5; justify-content: center; pointer-events: none; gap: 30px; }
-        .touch-controls .left-right { display: flex; gap: 25px; pointer-events: auto; margin-right: auto; }
-        .touch-controls .left-right button { width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.2); color: #fff; font-size: 28px; backdrop-filter: blur(4px); touch-action: manipulation; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; }
-        .touch-controls .left-right button:active { background: rgba(255,255,255,0.5); }
-        .touch-controls .jump-btn { width: 90px; height: 90px; border-radius: 50%; border: 4px solid #ffd700; background: rgba(255,215,0,0.35); color: #fff; font-size: 36px; font-weight: bold; backdrop-filter: blur(4px); touch-action: manipulation; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 30px rgba(255,215,0,0.6); text-shadow: 0 0 20px #ffd700; pointer-events: auto; margin-left: -20px; }
-        .touch-controls .jump-btn:active { background: rgba(255,215,0,0.7); transform: scale(0.95); }
-        @media (max-width: 600px) { .touch-controls .left-right button { width: 60px; height: 60px; font-size: 24px; } .touch-controls .jump-btn { width: 80px; height: 80px; font-size: 30px; margin-left: -10px; } }
+        .touch-controls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            padding: 0 20px;
+            z-index: 5;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .touch-controls .left-right {
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+        .touch-controls .left-right button,
+        .touch-controls .jump-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 28px;
+            backdrop-filter: blur(4px);
+            touch-action: manipulation;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            pointer-events: auto;
+        }
+        .touch-controls .left-right button:active,
+        .touch-controls .jump-btn:active {
+            background: rgba(255,255,255,0.5);
+        }
+        @media (max-width: 600px) {
+            .touch-controls .left-right button,
+            .touch-controls .jump-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+        }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: clamp(12px, 2.5vw, 18px); border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-family: 'Press Start 2P', cursive; }
         .toast.show { opacity: 1; }
     </style>
@@ -103,7 +143,7 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v1.7</div>
+        <div class="version">v1.9</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span></span>
@@ -179,7 +219,7 @@
                 <button id="touchLeft">◀</button>
                 <button id="touchRight">▶</button>
             </div>
-            <button id="touchJump">▲</button>
+            <button id="touchJump" class="jump-btn">▲</button>
         </div>
     </div>
 
@@ -231,7 +271,7 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (стартовая платформа, монет меньше)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ
 // ============================================================
 function generateLevels(count) {
     const levels = [];
@@ -267,7 +307,6 @@ function generateLevels(count) {
             platforms.push({ x: newX, y: newY, w: 60, h: 16 });
         }
         const coinPositions = [];
-        // пропускаем стартовую (j=0)
         for (let j = 1; j < platforms.length; j++) {
             if (j % 3 === 0 || r() > 0.7) {
                 const p = platforms[j];
