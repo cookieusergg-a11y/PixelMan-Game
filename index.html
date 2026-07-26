@@ -243,6 +243,16 @@
                     <button class="send-btn" id="adminSendAnnounce">📢 Отправить анонс</button>
                     <button class="danger-btn" id="adminClearAnnounce">🗑️ Удалить анонс</button>
                 </div>
+                <hr style="border-color: #333; margin: 10px 0;">
+                <label style="margin-top: 10px;">⚡ Множитель монет (событие)</label>
+                <input type="number" id="adminMultiplierInput" value="2.0" step="0.1">
+                <div class="modal-actions">
+                    <button class="send-btn" id="adminApplyAll">✅ Применить ко всем</button>
+                    <button class="send-btn" id="adminApplySelected">🎯 Применить к выбранным</button>
+                    <button class="danger-btn" id="adminClearMultiplier">⛔ Отключить</button>
+                </div>
+                <label>UID (через запятую для нескольких)</label>
+                <input type="text" id="adminMultiplierTargets" placeholder="UID1, UID2, ...">
             </div>
             <div class="modal-actions">
                 <button class="cancel-btn" id="adminClose">Закрыть</button>
@@ -506,6 +516,9 @@ let coinCollectCooldown = false;
 let useMobileLayout = false;
 let isAdmin = false;
 
+// --- Админ-множитель ---
+let adminMultiplierData = null; // { value, targets, active }
+
 // ============================================================
 //  АНТИ-ЧИТ (100 млн за 3 сек, админы защищены)
 // ============================================================
@@ -685,6 +698,39 @@ function checkAnnouncement() {
             showToast('📢 ' + data.text);
         }
     }).catch(err => {});
+}
+
+// --- Админ-множитель ---
+function getAdminMultiplier() {
+    if (!adminMultiplierData || !adminMultiplierData.active) return 1;
+    const targets = adminMultiplierData.targets;
+    if (targets === 'all' || (Array.isArray(targets) && currentUser && targets.includes(currentUser.uid))) {
+        return adminMultiplierData.value || 1;
+    }
+    return 1;
+}
+function adminApplyAll() {
+    const value = parseFloat(document.getElementById('adminMultiplierInput').value);
+    if (isNaN(value) || value <= 0) { showToast('Введите корректный множитель'); return; }
+    db.ref('adminMultiplier').set({ value, targets: 'all', active: true })
+        .then(() => showToast('✅ Множитель применён ко всем'))
+        .catch(err => showToast('Ошибка: '+err.message));
+}
+function adminApplySelected() {
+    const value = parseFloat(document.getElementById('adminMultiplierInput').value);
+    if (isNaN(value) || value <= 0) { showToast('Введите корректный множитель'); return; }
+    const targetsStr = document.getElementById('adminMultiplierTargets').value.trim();
+    if (!targetsStr) { showToast('Введите UID через запятую'); return; }
+    const targets = targetsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    if (targets.length === 0) { showToast('Нет корректных UID'); return; }
+    db.ref('adminMultiplier').set({ value, targets, active: true })
+        .then(() => showToast('🎯 Множитель применён к выбранным игрокам'))
+        .catch(err => showToast('Ошибка: '+err.message));
+}
+function adminClearMultiplier() {
+    db.ref('adminMultiplier').remove()
+        .then(() => showToast('⛔ Множитель отключён'))
+        .catch(err => showToast('Ошибка: '+err.message));
 }
 
 // ============================================================
@@ -1035,7 +1081,7 @@ function startAfk() {
         afkCountdown--;
         updateAfkTimerDisplay();
         if (afkCountdown <= 0) {
-            const reward = Math.round(5 * getTotalMultiplier());
+            const reward = Math.round(5 * getTotalMultiplier() * getAdminMultiplier());
             if (checkCoinRate(reward)) return;
             gameData.coins += reward;
             saveGameToFirebase();
@@ -1145,7 +1191,7 @@ function update() {
             }
         }
     }
-    const mult = getTotalMultiplier();
+    const mult = getTotalMultiplier() * getAdminMultiplier();
     if (coinCollectCooldown) {
         for (let c of coins) {
             if (!c.collected) {
@@ -1167,7 +1213,7 @@ function update() {
     if (player.x + PLAYER_W > doorX && player.x < doorX + DOOR_W &&
         player.y + PLAYER_H > 0 && player.y < 500) {
         const levelNum = currentLevel + 1;
-        const reward = 1 + (levelNum - 1) * 2;
+        const reward = Math.round((1 + (levelNum - 1) * 2) * getAdminMultiplier());
         if (!gameData.completedLevels.includes(levelNum)) {
             if (checkCoinRate(reward)) return;
             gameData.coins += reward;
@@ -1533,6 +1579,11 @@ window.onload = function() {
 
     touchControls.classList.remove('active');
 
+    // Слушаем админ-множитель
+    db.ref('adminMultiplier').on('value', snapshot => {
+        adminMultiplierData = snapshot.val();
+    });
+
     const hasDeviceMode = loadDeviceMode();
     setupTouchControls();
     signInAnonymously();
@@ -1575,6 +1626,11 @@ window.onload = function() {
     document.getElementById('closePlayersModal').addEventListener('click', () => { playersModal.style.display = 'none'; });
     document.getElementById('adminSendAnnounce').addEventListener('click', sendAnnounce);
     document.getElementById('adminClearAnnounce').addEventListener('click', clearAnnounce);
+
+    // Привязка кнопок множителя
+    document.getElementById('adminApplyAll').addEventListener('click', adminApplyAll);
+    document.getElementById('adminApplySelected').addEventListener('click', adminApplySelected);
+    document.getElementById('adminClearMultiplier').addEventListener('click', adminClearMultiplier);
 
     document.getElementById('upgradeBtn').addEventListener('click', () => {
         if (gameData.banned) return;
