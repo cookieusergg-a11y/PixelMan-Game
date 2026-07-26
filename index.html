@@ -37,7 +37,8 @@
         .menu .version { position: absolute; top: 10px; right: 20px; font-family: 'Press Start 2P', cursive; color: #666; font-size: 12px; opacity: 0.6; }
         .menu h1 { font-family: 'Press Start 2P', cursive; font-size: clamp(24px, 6vw, 48px); color: #fff; text-shadow: 0 0 20px #5af, 0 0 40px #3af; letter-spacing: 4px; margin-bottom: 5px; text-align: center; }
         .menu .profile { display: flex; flex-wrap: wrap; justify-content: space-between; width: 100%; max-width: 420px; color: #aaa; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2.5vw, 14px); background: #1a1a3a; padding: 8px 16px; border-radius: 30px; border: 1px solid #3a3a6a; gap: 5px; }
-        .menu .profile .id { color: #8af; }
+        .menu .profile .id { color: #8af; cursor: pointer; }
+        .menu .profile .id:hover { text-decoration: underline; }
         .menu .profile .coins { color: #ffd700; }
         .menu .profile .sync-status { color: #8f8; font-size: 10px; margin-left: 10px; }
         .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; max-width: 420px; }
@@ -78,6 +79,8 @@
         .modal-content .modal-actions .danger-btn:hover { background: #aa3a3a; }
         .modal-content .modal-actions .cancel-btn { background: #633; color: #fff; }
         .modal-content .modal-actions .cancel-btn:hover { background: #833; }
+        .modal-content .modal-actions .copy-btn { background: #2a6a6a; color: #fff; }
+        .modal-content .modal-actions .copy-btn:hover { background: #3a8a8a; }
         .upgrade-item { background: #1a1a3a; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; }
         .upgrade-item .label { color: #fff; font-family: 'Press Start 2P', cursive; font-size: clamp(12px, 2.5vw, 16px); }
         .upgrade-item .info { color: #aaa; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2vw, 14px); display: flex; justify-content: space-between; }
@@ -170,15 +173,21 @@
         }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a2a4a; color: #ffd700; padding: 10px 30px; border-radius: 30px; font-size: clamp(12px, 2.5vw, 18px); border: 1px solid #ffd70055; box-shadow: 0 0 30px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-family: 'Press Start 2P', cursive; }
         .toast.show { opacity: 1; }
+        .player-list-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #333; align-items: center; }
+        .player-list-item .uid { color: #8af; font-size: 12px; word-break: break-all; cursor: pointer; }
+        .player-list-item .uid:hover { text-decoration: underline; }
+        .player-list-item .balance { color: #ffd700; font-size: 14px; }
+        .player-list-item .copy-uid-btn { background: none; border: none; color: #aaa; cursor: pointer; font-size: 16px; margin-left: 8px; }
+        .player-list-item .copy-uid-btn:hover { color: #fff; }
     </style>
 </head>
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v4.2</div>
+        <div class="version">v4.3</div>
         <h1>PixelMan</h1>
         <div class="profile">
-            <span class="id">🆔 <span id="userId">--</span></span>
+            <span class="id">🆔 <span id="userId">--</span> <span id="copyIdBtn" style="cursor:pointer; font-size:14px; color:#aaa; margin-left:5px;">📋</span></span>
             <span class="coins">🪙 <span id="userCoins">0</span></span>
             <span class="sync-status" id="syncStatus">● синхр.</span>
         </div>
@@ -211,28 +220,52 @@
         <button class="close-shop" id="closeShop">Закрыть</button>
     </div>
 
+    <!-- Админ-панель -->
     <div class="modal" id="adminModal">
         <div class="modal-content">
             <h2>🔧 Админ-панель</h2>
-            <label>UID игрока</label>
-            <input type="text" id="adminTargetUid" placeholder="Введите UID">
-            <label>Количество монет</label>
-            <input type="number" id="adminCoinAmount" placeholder="Сумма">
-            <div class="modal-actions">
-                <button class="send-btn" id="adminAddCoins">➕ Выдать монеты</button>
-                <button class="danger-btn" id="adminRemoveCoins">➖ Удалить монеты</button>
+            <div class="modal-actions" style="flex-wrap: wrap; gap: 10px;">
+                <button class="send-btn" id="adminShowPlayers">📋 Список игроков</button>
             </div>
-            <div class="modal-actions">
-                <button class="danger-btn" id="adminBan">🚫 Забанить</button>
-                <button class="send-btn" id="adminUnban">✅ Разбанить</button>
-            </div>
-            <label>Предупреждение (текст)</label>
-            <textarea id="adminWarningText" placeholder="Текст предупреждения"></textarea>
-            <div class="modal-actions">
-                <button class="send-btn" id="adminSendWarning">📨 Отправить предупреждение</button>
+            <div style="margin-top: 10px;">
+                <label>UID игрока</label>
+                <input type="text" id="adminTargetUid" placeholder="Введите UID">
+                <label>Количество монет</label>
+                <input type="number" id="adminCoinAmount" placeholder="Сумма">
+                <div class="modal-actions">
+                    <button class="send-btn" id="adminAddCoins">➕ Выдать монеты</button>
+                    <button class="danger-btn" id="adminRemoveCoins">➖ Удалить монеты</button>
+                </div>
+                <div class="modal-actions">
+                    <button class="danger-btn" id="adminBan">🚫 Забанить</button>
+                    <button class="send-btn" id="adminUnban">✅ Разбанить</button>
+                </div>
+                <label>Предупреждение (текст)</label>
+                <textarea id="adminWarningText" placeholder="Текст предупреждения"></textarea>
+                <div class="modal-actions">
+                    <button class="send-btn" id="adminSendWarning">📨 Отправить предупреждение</button>
+                </div>
+                <hr style="border-color: #333; margin: 10px 0;">
+                <label style="margin-top: 10px;">📢 Анонс для всех игроков</label>
+                <textarea id="adminAnnounceText" placeholder="Текст анонса (будет показан всем)"></textarea>
+                <div class="modal-actions">
+                    <button class="send-btn" id="adminSendAnnounce">📢 Отправить анонс</button>
+                    <button class="danger-btn" id="adminClearAnnounce">🗑️ Удалить анонс</button>
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="cancel-btn" id="adminClose">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка списка игроков -->
+    <div class="modal" id="playersModal">
+        <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+            <h2>👥 Список игроков</h2>
+            <div id="playersList" style="max-height: 400px; overflow-y: auto;"></div>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="closePlayersModal">Закрыть</button>
             </div>
         </div>
     </div>
@@ -344,61 +377,82 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (ОЧЕНЬ ЛЕГКАЯ)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ С ЛЕСЕНКАМИ
 // ============================================================
 function generateLevels(count) {
     const levels = [];
     for (let i = 0; i < count; i++) {
-        // Сложность почти не растёт
-        const difficulty = i / count * 0.4; // макс 0.4
-        // Количество платформ: от 4 до 6
-        const platCount = 4 + Math.floor(difficulty * 2) + Math.floor(Math.random() * 1);
-        const baseY = 440 - Math.floor(difficulty * 20);
-        // Разрывы маленькие
-        const minGap = 50;
-        const maxGap = 90;
+        const difficulty = i / count; // 0..1
+        // Количество платформ: от 5 до 10
+        const platCount = 5 + Math.floor(difficulty * 5) + Math.floor(Math.random() * 2);
+        const baseY = 440 - Math.floor(difficulty * 30);
+        // Разрывы: увеличиваются с уровнем
+        const minGap = 50 + Math.floor(difficulty * 30);
+        const maxGap = 90 + Math.floor(difficulty * 40);
         const platforms = [];
-        // Стартовая платформа – широкая
-        const startPlat = { x: 10, y: baseY, w: 100, h: 16 };
+        // Стартовая платформа
+        const startPlat = { x: 10, y: baseY, w: 80, h: 16 };
         platforms.push(startPlat);
         let cx = startPlat.x + startPlat.w;
         let cy = baseY;
         const maxX = 760;
         const rng = (seed) => { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
         const r = rng(i * 137 + 42);
+
+        // Флаг для создания лесенки на сложных уровнях
+        let ladderMode = false;
+        let ladderCount = 0;
+        if (difficulty > 0.4 && Math.random() > 0.6) {
+            ladderMode = true;
+            ladderCount = 3 + Math.floor(Math.random() * 3); // 3-5 ступенек
+        }
+
         for (let j = 0; j < platCount; j++) {
-            // Ширина платформ: 60-100
-            const w = 60 + Math.floor(r() * 40);
-            const h = 16;
-            // Вертикальный перепад маленький
-            const yOffset = Math.floor(r() * 30 - 15) - Math.floor(difficulty * 10);
-            const py = Math.min(445, Math.max(300, cy + yOffset));
-            // Разрыв без дополнительного увеличения сложности
-            const gap = minGap + Math.floor(r() * (maxGap - minGap));
+            let w, py, gap;
+            if (ladderMode && ladderCount > 0) {
+                // Лесенка: платформы чуть выше/ниже, с небольшим смещением по X
+                const step = 1 - ladderCount / 4; // чем меньше ступенек, тем круче
+                w = 40 + Math.floor(r() * 20);
+                const yOffset = -Math.floor(20 + step * 30) + Math.floor(r() * 15); // поднимаем вверх
+                py = Math.min(445, Math.max(250, cy + yOffset));
+                gap = 30 + Math.floor(r() * 20); // маленький разрыв
+                ladderCount--;
+                if (ladderCount === 0) ladderMode = false;
+            } else {
+                w = 50 + Math.floor(r() * 30) + Math.floor(difficulty * 15);
+                const yOffset = Math.floor(r() * 40 - 20) - Math.floor(difficulty * 15);
+                py = Math.min(445, Math.max(280, cy + yOffset));
+                gap = minGap + Math.floor(r() * (maxGap - minGap));
+                // Иногда добавляем дополнительный вертикальный разрыв на сложных
+                if (difficulty > 0.7 && r() > 0.7) {
+                    py -= 30;
+                }
+            }
             cx += gap;
             if (cx + w > maxX) break;
-            platforms.push({ x: cx, y: py, w, h });
+            platforms.push({ x: cx, y: py, w, h: 16 });
             cx += w;
             cy = py;
         }
-        // Гарантируем минимум 3 платформы после стартовой
+        // Если платформ меньше 4, добавляем принудительно
         while (platforms.length < 4) {
             const last = platforms[platforms.length - 1];
             const newX = last.x + last.w + 80;
-            const newY = Math.min(445, Math.max(300, last.y + (Math.random() * 30 - 15) - difficulty * 10));
-            platforms.push({ x: newX, y: newY, w: 70, h: 16 });
+            const newY = Math.min(445, Math.max(280, last.y + (Math.random() * 30 - 15) - difficulty * 10));
+            platforms.push({ x: newX, y: newY, w: 60, h: 16 });
         }
-        // Монеты – немного
+
+        // Монеты
         const coinPositions = [];
         for (let j = 1; j < platforms.length; j++) {
-            if (j % 2 === 0 || r() > 0.6) {
+            if (j % 2 === 0 || r() > 0.5) {
                 const p = platforms[j];
                 const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
                 const coinY = p.y - 15 - Math.random() * 10;
                 coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
             }
         }
-        const extraCount = Math.floor(platCount * 0.3);
+        const extraCount = Math.floor(platCount * 0.4) + Math.floor(difficulty * 2);
         for (let j = 0; j < extraCount; j++) {
             const idx = Math.floor(r() * platforms.length);
             if (idx === 0) continue;
@@ -407,10 +461,11 @@ function generateLevels(count) {
             const coinY = p.y - 20 - r() * 15;
             coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
         }
+
         const playerX = startPlat.x + 10;
         const playerY = startPlat.y - PLAYER_H;
         const lastPlat = platforms[platforms.length - 1];
-        let doorX = Math.min(lastPlat.x + lastPlat.w + 70, 780);
+        let doorX = Math.min(lastPlat.x + lastPlat.w + 60 + Math.floor(difficulty * 30), 780);
         if (doorX < 700) doorX = 700;
         levels.push({
             platforms: platforms,
@@ -447,7 +502,7 @@ let player = { x:0, y:0, vx:0, vy:0, onGround:false, walkTime:0 };
 let platforms = [], coins = [], doorX = 0;
 const DOOR_W = 30, DOOR_H = 500;
 let keys = { left:false, right:false, jump:false };
-let canvas, ctx, menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal, adminModal;
+let canvas, ctx, menuEl, deviceSelectEl, gameWrapper, gameOverEl, shopEl, transferModal, upgradeModal, adminModal, playersModal;
 let levelGrid, coinDisplay, userIdDisplay, syncStatus;
 let afkActive = false, afkInterval = null, afkCountdown = 120;
 let afkTimerElement, afkBtnElement, toastEl;
@@ -555,6 +610,99 @@ function adminSendWarning() {
     showToast('Предупреждение отправлено');
 }
 
+// Показать список игроков
+function showPlayersList() {
+    db.ref('users').once('value').then(snapshot => {
+        const data = snapshot.val();
+        const listDiv = document.getElementById('playersList');
+        listDiv.innerHTML = '';
+        if (!data) {
+            listDiv.innerHTML = '<p style="color:#aaa;">Игроки не найдены</p>';
+            return;
+        }
+        let html = '';
+        for (const uid in data) {
+            const user = data[uid];
+            if (user.banned) continue; // не показываем забаненных
+            const coins = user.coins || 0;
+            html += `
+                <div class="player-list-item">
+                    <span class="uid" data-uid="${uid}">${uid}</span>
+                    <span class="balance">🪙 ${coins}</span>
+                    <button class="copy-uid-btn" data-uid="${uid}">📋</button>
+                </div>
+            `;
+        }
+        listDiv.innerHTML = html;
+        // Добавляем обработчики копирования
+        listDiv.querySelectorAll('.copy-uid-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const uid = this.dataset.uid;
+                navigator.clipboard.writeText(uid).then(() => {
+                    showToast('UID скопирован!');
+                }).catch(() => {
+                    // fallback
+                    const textArea = document.createElement('textarea');
+                    textArea.value = uid;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    textArea.remove();
+                    showToast('UID скопирован!');
+                });
+            });
+        });
+        // Клик по UID тоже копирует
+        listDiv.querySelectorAll('.uid').forEach(el => {
+            el.addEventListener('click', function() {
+                const uid = this.dataset.uid;
+                navigator.clipboard.writeText(uid).then(() => {
+                    showToast('UID скопирован!');
+                }).catch(() => {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = uid;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    textArea.remove();
+                    showToast('UID скопирован!');
+                });
+            });
+        });
+        playersModal.style.display = 'flex';
+    }).catch(err => {
+        showToast('Ошибка загрузки списка: ' + err.message);
+    });
+}
+
+// Анонс
+function sendAnnounce() {
+    const text = document.getElementById('adminAnnounceText').value.trim();
+    if (!text) { showToast('Введите текст анонса'); return; }
+    db.ref('announcement').set({
+        text: text,
+        timestamp: Date.now()
+    }).then(() => {
+        showToast('Анонс отправлен!');
+        document.getElementById('adminAnnounceText').value = '';
+    }).catch(err => showToast('Ошибка: '+err.message));
+}
+function clearAnnounce() {
+    db.ref('announcement').remove().then(() => {
+        showToast('Анонс удалён');
+    }).catch(err => showToast('Ошибка: '+err.message));
+}
+
+// Проверка анонсов при входе в меню
+function checkAnnouncement() {
+    db.ref('announcement').once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (data && data.text) {
+            showToast('📢 ' + data.text);
+        }
+    }).catch(err => {});
+}
+
 // ============================================================
 //  ФУНКЦИИ АПГРЕЙДОВ
 // ============================================================
@@ -638,6 +786,8 @@ function loadGameFromFirebase() {
             isAdmin = true;
             document.getElementById('adminBtn').style.display = 'inline-block';
         }
+        // Проверяем анонсы
+        checkAnnouncement();
     }).catch(err => {
         console.warn('Ошибка загрузки из Firebase:', err);
         setSyncStatus(false);
@@ -1311,7 +1461,7 @@ function showToast(text) {
     toastEl.textContent = text;
     toastEl.classList.add('show');
     clearTimeout(toastEl._timeout);
-    toastEl._timeout = setTimeout(() => toastEl.classList.remove('show'), 2500);
+    toastEl._timeout = setTimeout(() => toastEl.classList.remove('show'), 3500);
 }
 
 // ============================================================
@@ -1385,6 +1535,7 @@ window.onload = function() {
     transferModal = document.getElementById('transferModal');
     upgradeModal = document.getElementById('upgradeModal');
     adminModal = document.getElementById('adminModal');
+    playersModal = document.getElementById('playersModal');
     levelGrid = document.getElementById('levelGrid');
     coinDisplay = document.getElementById('coinDisplay');
     userIdDisplay = document.getElementById('userId');
@@ -1427,15 +1578,21 @@ window.onload = function() {
     });
     document.getElementById('adminClose').addEventListener('click', () => {
         adminModal.style.display = 'none';
+        playersModal.style.display = 'none';
     });
     window.addEventListener('click', (e) => {
         if (e.target === adminModal) adminModal.style.display = 'none';
+        if (e.target === playersModal) playersModal.style.display = 'none';
     });
     document.getElementById('adminAddCoins').addEventListener('click', adminAddCoins);
     document.getElementById('adminRemoveCoins').addEventListener('click', adminRemoveCoins);
     document.getElementById('adminBan').addEventListener('click', adminBan);
     document.getElementById('adminUnban').addEventListener('click', adminUnban);
     document.getElementById('adminSendWarning').addEventListener('click', adminSendWarning);
+    document.getElementById('adminShowPlayers').addEventListener('click', showPlayersList);
+    document.getElementById('closePlayersModal').addEventListener('click', () => { playersModal.style.display = 'none'; });
+    document.getElementById('adminSendAnnounce').addEventListener('click', sendAnnounce);
+    document.getElementById('adminClearAnnounce').addEventListener('click', clearAnnounce);
 
     document.getElementById('upgradeBtn').addEventListener('click', () => {
         if (gameData.banned) return;
@@ -1468,6 +1625,23 @@ window.onload = function() {
         const target = document.getElementById('targetIdInput').value.trim();
         const amount = parseInt(document.getElementById('amountInput').value);
         transferCoins(target, amount);
+    });
+
+    // Копирование ID
+    document.getElementById('copyIdBtn').addEventListener('click', function() {
+        const uid = gameData.userId;
+        if (!uid) return;
+        navigator.clipboard.writeText(uid).then(() => {
+            showToast('ID скопирован!');
+        }).catch(() => {
+            const textArea = document.createElement('textarea');
+            textArea.value = uid;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+            showToast('ID скопирован!');
+        });
     });
 
     document.getElementById('devicePc').addEventListener('click', () => {
@@ -1503,6 +1677,8 @@ window.onload = function() {
                 menuEl.style.display = 'flex';
                 deviceSelectEl.style.display = 'none';
                 updateUI();
+                // Проверяем анонс при входе в меню
+                checkAnnouncement();
             } else {
                 showDeviceSelect();
             }
@@ -1515,7 +1691,6 @@ window.onload = function() {
     canvas.addEventListener('click', exitIntro);
     canvas.addEventListener('pointerdown', exitIntro);
 
-    // Начальное состояние: заставка видна, меню скрыто, game-wrapper виден
     introActive = true;
     menuEl.style.display = 'none';
     deviceSelectEl.style.display = 'none';
@@ -1526,6 +1701,7 @@ window.onload = function() {
     transferModal.style.display = 'none';
     upgradeModal.style.display = 'none';
     adminModal.style.display = 'none';
+    playersModal.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
 
     window._loopStarted = false;
@@ -1543,6 +1719,7 @@ function goToMenu() {
     transferModal.style.display = 'none';
     upgradeModal.style.display = 'none';
     adminModal.style.display = 'none';
+    playersModal.style.display = 'none';
     menuEl.style.display = 'flex';
     deviceSelectEl.style.display = 'none';
     document.getElementById('backToMenu').style.display = 'none';
@@ -1551,6 +1728,8 @@ function goToMenu() {
     updateUpgradeUI();
     keys = {left:false, right:false, jump:false};
     player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
+    // Проверяем анонсы при возврате в меню
+    checkAnnouncement();
 }
 
 function resetProgress() {
