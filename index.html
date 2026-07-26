@@ -184,7 +184,7 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v4.3</div>
+        <div class="version">v4.4</div>
         <h1>PixelMan</h1>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span> <span id="copyIdBtn" style="cursor:pointer; font-size:14px; color:#aaa; margin-left:5px;">📋</span></span>
@@ -377,21 +377,20 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ С ЛЕСЕНКАМИ
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (УСЛОЖНЕННАЯ С НЕЛИНЕЙНЫМ РОСТОМ)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
     for (let i = 0; i < count; i++) {
-        const difficulty = i / count; // 0..1
-        // Количество платформ: от 5 до 10
-        const platCount = 5 + Math.floor(difficulty * 5) + Math.floor(Math.random() * 2);
-        const baseY = 440 - Math.floor(difficulty * 30);
-        // Разрывы: увеличиваются с уровнем
-        const minGap = 50 + Math.floor(difficulty * 30);
-        const maxGap = 90 + Math.floor(difficulty * 40);
+        const t = i / count; // 0..1
+        // Квадратичная сложность – к концу резко возрастает
+        const difficulty = t * t; // 0..1
+        const platCount = 4 + Math.floor(difficulty * 6) + Math.floor(Math.random() * 2);
+        const baseY = 440 - Math.floor(difficulty * 40);
+        const minGap = 50 + Math.floor(difficulty * 40);
+        const maxGap = 90 + Math.floor(difficulty * 60);
         const platforms = [];
-        // Стартовая платформа
-        const startPlat = { x: 10, y: baseY, w: 80, h: 16 };
+        const startPlat = { x: 10, y: baseY, w: Math.max(30, 80 - Math.floor(difficulty * 30)), h: 16 };
         platforms.push(startPlat);
         let cx = startPlat.x + startPlat.w;
         let cy = baseY;
@@ -399,33 +398,30 @@ function generateLevels(count) {
         const rng = (seed) => { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
         const r = rng(i * 137 + 42);
 
-        // Флаг для создания лесенки на сложных уровнях
         let ladderMode = false;
         let ladderCount = 0;
-        if (difficulty > 0.4 && Math.random() > 0.6) {
+        if (difficulty > 0.3 && r() > 0.4) {
             ladderMode = true;
-            ladderCount = 3 + Math.floor(Math.random() * 3); // 3-5 ступенек
+            ladderCount = 2 + Math.floor(r() * 4);
         }
 
         for (let j = 0; j < platCount; j++) {
             let w, py, gap;
             if (ladderMode && ladderCount > 0) {
-                // Лесенка: платформы чуть выше/ниже, с небольшим смещением по X
-                const step = 1 - ladderCount / 4; // чем меньше ступенек, тем круче
-                w = 40 + Math.floor(r() * 20);
-                const yOffset = -Math.floor(20 + step * 30) + Math.floor(r() * 15); // поднимаем вверх
-                py = Math.min(445, Math.max(250, cy + yOffset));
-                gap = 30 + Math.floor(r() * 20); // маленький разрыв
+                const step = 1 - ladderCount / 4;
+                w = Math.max(20, 30 + Math.floor(r() * 20) - Math.floor(difficulty * 8));
+                const yOffset = -Math.floor(25 + step * 35) + Math.floor(r() * 15);
+                py = Math.min(445, Math.max(180, cy + yOffset));
+                gap = 20 + Math.floor(r() * 20);
                 ladderCount--;
                 if (ladderCount === 0) ladderMode = false;
             } else {
-                w = 50 + Math.floor(r() * 30) + Math.floor(difficulty * 15);
-                const yOffset = Math.floor(r() * 40 - 20) - Math.floor(difficulty * 15);
-                py = Math.min(445, Math.max(280, cy + yOffset));
+                w = Math.max(30, 40 + Math.floor(r() * 30) + Math.floor(difficulty * 10) - Math.floor(difficulty * 30));
+                const yOffset = Math.floor(r() * 50 - 25) - Math.floor(difficulty * 30);
+                py = Math.min(445, Math.max(180, cy + yOffset));
                 gap = minGap + Math.floor(r() * (maxGap - minGap));
-                // Иногда добавляем дополнительный вертикальный разрыв на сложных
-                if (difficulty > 0.7 && r() > 0.7) {
-                    py -= 30;
+                if (difficulty > 0.7 && r() > 0.6) {
+                    gap += 30;
                 }
             }
             cx += gap;
@@ -434,25 +430,23 @@ function generateLevels(count) {
             cx += w;
             cy = py;
         }
-        // Если платформ меньше 4, добавляем принудительно
         while (platforms.length < 4) {
             const last = platforms[platforms.length - 1];
-            const newX = last.x + last.w + 80;
-            const newY = Math.min(445, Math.max(280, last.y + (Math.random() * 30 - 15) - difficulty * 10));
-            platforms.push({ x: newX, y: newY, w: 60, h: 16 });
+            const newX = last.x + last.w + 70 + Math.floor(difficulty * 30);
+            const newY = Math.min(445, Math.max(180, last.y + (Math.random() * 40 - 20) - difficulty * 25));
+            platforms.push({ x: newX, y: newY, w: 40 + Math.floor(Math.random() * 20), h: 16 });
         }
 
-        // Монеты
         const coinPositions = [];
         for (let j = 1; j < platforms.length; j++) {
-            if (j % 2 === 0 || r() > 0.5) {
+            if (j % 2 === 0 || r() > 0.5 - difficulty * 0.2) {
                 const p = platforms[j];
                 const coinX = p.x + p.w/2 + (Math.random() * 20 - 10);
                 const coinY = p.y - 15 - Math.random() * 10;
                 coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
             }
         }
-        const extraCount = Math.floor(platCount * 0.4) + Math.floor(difficulty * 2);
+        const extraCount = Math.floor(platCount * 0.4) + Math.floor(difficulty * 3);
         for (let j = 0; j < extraCount; j++) {
             const idx = Math.floor(r() * platforms.length);
             if (idx === 0) continue;
@@ -465,7 +459,7 @@ function generateLevels(count) {
         const playerX = startPlat.x + 10;
         const playerY = startPlat.y - PLAYER_H;
         const lastPlat = platforms[platforms.length - 1];
-        let doorX = Math.min(lastPlat.x + lastPlat.w + 60 + Math.floor(difficulty * 30), 780);
+        let doorX = Math.min(lastPlat.x + lastPlat.w + 60 + Math.floor(difficulty * 40), 780);
         if (doorX < 700) doorX = 700;
         levels.push({
             platforms: platforms,
@@ -609,8 +603,6 @@ function adminSendWarning() {
     db.ref('users/' + uid + '/warning').set(text);
     showToast('Предупреждение отправлено');
 }
-
-// Показать список игроков
 function showPlayersList() {
     db.ref('users').once('value').then(snapshot => {
         const data = snapshot.val();
@@ -623,7 +615,7 @@ function showPlayersList() {
         let html = '';
         for (const uid in data) {
             const user = data[uid];
-            if (user.banned) continue; // не показываем забаненных
+            if (user.banned) continue;
             const coins = user.coins || 0;
             html += `
                 <div class="player-list-item">
@@ -634,14 +626,12 @@ function showPlayersList() {
             `;
         }
         listDiv.innerHTML = html;
-        // Добавляем обработчики копирования
         listDiv.querySelectorAll('.copy-uid-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function() {
                 const uid = this.dataset.uid;
                 navigator.clipboard.writeText(uid).then(() => {
                     showToast('UID скопирован!');
                 }).catch(() => {
-                    // fallback
                     const textArea = document.createElement('textarea');
                     textArea.value = uid;
                     document.body.appendChild(textArea);
@@ -652,7 +642,6 @@ function showPlayersList() {
                 });
             });
         });
-        // Клик по UID тоже копирует
         listDiv.querySelectorAll('.uid').forEach(el => {
             el.addEventListener('click', function() {
                 const uid = this.dataset.uid;
@@ -674,8 +663,6 @@ function showPlayersList() {
         showToast('Ошибка загрузки списка: ' + err.message);
     });
 }
-
-// Анонс
 function sendAnnounce() {
     const text = document.getElementById('adminAnnounceText').value.trim();
     if (!text) { showToast('Введите текст анонса'); return; }
@@ -692,8 +679,6 @@ function clearAnnounce() {
         showToast('Анонс удалён');
     }).catch(err => showToast('Ошибка: '+err.message));
 }
-
-// Проверка анонсов при входе в меню
 function checkAnnouncement() {
     db.ref('announcement').once('value').then(snapshot => {
         const data = snapshot.val();
@@ -786,7 +771,6 @@ function loadGameFromFirebase() {
             isAdmin = true;
             document.getElementById('adminBtn').style.display = 'inline-block';
         }
-        // Проверяем анонсы
         checkAnnouncement();
     }).catch(err => {
         console.warn('Ошибка загрузки из Firebase:', err);
@@ -1548,7 +1532,6 @@ window.onload = function() {
     touchRight = document.getElementById('touchRight');
     touchJump = document.getElementById('touchJump');
 
-    // Скрываем кнопки изначально
     touchControls.classList.remove('active');
 
     const hasDeviceMode = loadDeviceMode();
@@ -1627,7 +1610,6 @@ window.onload = function() {
         transferCoins(target, amount);
     });
 
-    // Копирование ID
     document.getElementById('copyIdBtn').addEventListener('click', function() {
         const uid = gameData.userId;
         if (!uid) return;
@@ -1677,7 +1659,6 @@ window.onload = function() {
                 menuEl.style.display = 'flex';
                 deviceSelectEl.style.display = 'none';
                 updateUI();
-                // Проверяем анонс при входе в меню
                 checkAnnouncement();
             } else {
                 showDeviceSelect();
@@ -1728,7 +1709,6 @@ function goToMenu() {
     updateUpgradeUI();
     keys = {left:false, right:false, jump:false};
     player.x = 0; player.y = 0; player.vx = 0; player.vy = 0;
-    // Проверяем анонсы при возврате в меню
     checkAnnouncement();
 }
 
