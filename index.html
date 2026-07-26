@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PixelMan</title>
-    <!-- Фавикон (пиксельный человечек) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%2312122a'/><rect x='20' y='12' width='24' height='16' fill='%23f5cba7'/><rect x='16' y='28' width='32' height='16' fill='%23ffffff'/><rect x='16' y='44' width='10' height='16' fill='%23e6b88a'/><rect x='38' y='44' width='10' height='16' fill='%23e6b88a'/><rect x='28' y='6' width='8' height='8' fill='%23ffffff'/><circle cx='28' cy='16' r='2' fill='%23000'/><circle cx='36' cy='16' r='2' fill='%23000'/></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -520,62 +519,6 @@ let isAdmin = false;
 let adminMultiplierData = null; // { value, targets, active }
 
 // ============================================================
-//  АНТИ-ЧИТ (100 млн за 3 сек, админы защищены)
-// ============================================================
-let coinHistory = [];
-let lastWarningTime = 0;
-
-function checkCoinRate(amount) {
-    if (currentUser && ADMIN_UIDS.includes(currentUser.uid)) {
-        coinHistory = [];
-        return false;
-    }
-    coinHistory.push({ amount, time: Date.now() });
-    coinHistory = coinHistory.filter(entry => Date.now() - entry.time < 3000);
-    const total = coinHistory.reduce((sum, e) => sum + e.amount, 0);
-    const threshold = 100000000;
-    if (total > threshold) {
-        const now = Date.now();
-        if (lastWarningTime > 0 && (now - lastWarningTime) < 30000) {
-            banAccount('Слишком быстрый набор монет (читерство)');
-            return true;
-        } else {
-            showToast('⚠️ Подозрительная активность! При повторном превышении лимита аккаунт будет заблокирован.');
-            lastWarningTime = now;
-            coinHistory = [];
-            return false;
-        }
-    }
-    return false;
-}
-
-function banAccount(reason) {
-    if (!currentUser) return;
-    if (ADMIN_UIDS.includes(currentUser.uid)) {
-        showToast('Админы не подлежат блокировке.');
-        return;
-    }
-    db.ref('users/' + currentUser.uid + '/banned').set(true);
-    db.ref('users/' + currentUser.uid + '/banReason').set(reason);
-    gameData.banned = true;
-    gameData.coins = 0;
-    saveGameToFirebase();
-    gameRunning = false;
-    gameOverShown = false;
-    menuEl.style.display = 'none';
-    touchControls.classList.remove('active');
-    gameWrapper.classList.add('hidden');
-    document.body.innerHTML = `
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:#0a0a1a; color:#fff; font-family:'Press Start 2P', cursive; text-align:center; padding:20px;">
-            <h1 style="color:#ff4444;">🚫 АККАУНТ ЗАБЛОКИРОВАН</h1>
-            <p style="margin:20px 0; font-size:clamp(16px, 3vw, 24px);">Причина: ${reason}</p>
-            <p style="font-size:clamp(12px, 2vw, 16px); color:#aaa;">Ваш баланс обнулён. Обратитесь к администратору.</p>
-            <button onclick="location.reload()" style="margin-top:30px; padding:12px 30px; background:#333; color:#fff; border:1px solid #555; border-radius:10px; cursor:pointer; font-family:'Press Start 2P', cursive; font-size:14px;">Обновить страницу</button>
-        </div>
-    `;
-}
-
-// ============================================================
 //  АДМИН-ФУНКЦИИ
 // ============================================================
 function adminAddCoins() {
@@ -1082,7 +1025,6 @@ function startAfk() {
         updateAfkTimerDisplay();
         if (afkCountdown <= 0) {
             const reward = Math.round(5 * getTotalMultiplier() * getAdminMultiplier());
-            if (checkCoinRate(reward)) return;
             gameData.coins += reward;
             saveGameToFirebase();
             updateUI();
@@ -1200,7 +1142,6 @@ function update() {
                 if (Math.sqrt(dx*dx + dy*dy) < c.radius + 14) {
                     c.collected = true;
                     const reward = Math.round(1 * mult);
-                    if (checkCoinRate(reward)) return;
                     gameData.coins += reward;
                     saveGameToFirebase();
                     updateUI();
@@ -1215,7 +1156,6 @@ function update() {
         const levelNum = currentLevel + 1;
         const reward = Math.round((1 + (levelNum - 1) * 2) * getAdminMultiplier());
         if (!gameData.completedLevels.includes(levelNum)) {
-            if (checkCoinRate(reward)) return;
             gameData.coins += reward;
             gameData.completedLevels.push(levelNum);
             saveGameToFirebase();
