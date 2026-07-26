@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PixelMan</title>
+    <!-- Фавикон (пиксельный человечек) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%2312122a'/><rect x='20' y='12' width='24' height='16' fill='%23f5cba7'/><rect x='16' y='28' width='32' height='16' fill='%23ffffff'/><rect x='16' y='44' width='10' height='16' fill='%23e6b88a'/><rect x='38' y='44' width='10' height='16' fill='%23e6b88a'/><rect x='28' y='6' width='8' height='8' fill='%23ffffff'/><circle cx='28' cy='16' r='2' fill='%23000'/><circle cx='36' cy='16' r='2' fill='%23000'/></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -21,21 +23,13 @@
             max-width: 820px;
             margin: 0 auto;
         }
-        canvas {
-            display: block;
-            margin: 0 auto;
-            background: #1a1a3a;
-            border-radius: 10px;
-            width: 100%;
-            height: auto;
-            aspect-ratio: 8 / 5;
-            cursor: pointer;
-            touch-action: none;
-            min-height: 300px;
-        }
+        canvas { display: block; margin: 0 auto; background: #1a1a3a; border-radius: 10px; width: 100%; height: auto; aspect-ratio: 8 / 5; cursor: pointer; touch-action: none; min-height: 300px; }
         .menu { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 20px; min-width: 280px; width: 100%; position: relative; overflow: visible; }
         .menu .version { position: absolute; top: 10px; right: 20px; font-family: 'Press Start 2P', cursive; color: #666; font-size: 12px; opacity: 0.6; }
-        .menu h1 { font-family: 'Press Start 2P', cursive; font-size: clamp(24px, 6vw, 48px); color: #fff; text-shadow: 0 0 20px #5af, 0 0 40px #3af; letter-spacing: 4px; margin-bottom: 5px; text-align: center; }
+        .menu .logo-container { position: relative; width: 100%; max-width: 300px; height: 80px; overflow: hidden; border-radius: 12px; background: #0a0a1a; box-shadow: 0 0 30px #2a2a6a55; }
+        .menu .logo-container canvas { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 12px; background: transparent; }
+        .menu .logo-container .logo-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Press Start 2P', cursive; font-size: 28px; color: #fff; text-shadow: 0 0 20px #0ff, 0 0 40px #f0f, 0 0 60px #0ff; pointer-events: none; z-index: 2; letter-spacing: 2px; white-space: nowrap; }
+        .menu h1 { font-family: 'Press Start 2P', cursive; font-size: clamp(24px, 6vw, 48px); color: #fff; text-shadow: 0 0 20px #5af, 0 0 40px #3af; letter-spacing: 4px; margin-bottom: 5px; text-align: center; display: none; }
         .menu .profile { display: flex; flex-wrap: wrap; justify-content: space-between; width: 100%; max-width: 420px; color: #aaa; font-family: 'Press Start 2P', cursive; font-size: clamp(10px, 2.5vw, 14px); background: #1a1a3a; padding: 8px 16px; border-radius: 30px; border: 1px solid #3a3a6a; gap: 5px; }
         .menu .profile .id { color: #8af; cursor: pointer; }
         .menu .profile .id:hover { text-decoration: underline; }
@@ -184,8 +178,12 @@
 <body>
 <div id="app">
     <div class="menu" id="menu">
-        <div class="version">v4.4</div>
-        <h1>PixelMan</h1>
+        <div class="version">v4.7</div>
+        <!-- Логотип с анимацией -->
+        <div class="logo-container" id="logoContainer">
+            <canvas id="logoCanvas" width="300" height="80"></canvas>
+            <div class="logo-text">PixelMan</div>
+        </div>
         <div class="profile">
             <span class="id">🆔 <span id="userId">--</span> <span id="copyIdBtn" style="cursor:pointer; font-size:14px; color:#aaa; margin-left:5px;">📋</span></span>
             <span class="coins">🪙 <span id="userCoins">0</span></span>
@@ -377,20 +375,28 @@ const SKINS = [
 ];
 
 // ============================================================
-//  ГЕНЕРАЦИЯ УРОВНЕЙ (УСЛОЖНЕННАЯ С НЕЛИНЕЙНЫМ РОСТОМ)
+//  ГЕНЕРАЦИЯ УРОВНЕЙ (ПРОХОДИМЫЕ, НО СЛОЖНЫЕ)
 // ============================================================
 function generateLevels(count) {
     const levels = [];
     for (let i = 0; i < count; i++) {
-        const t = i / count; // 0..1
-        // Квадратичная сложность – к концу резко возрастает
-        const difficulty = t * t; // 0..1
-        const platCount = 4 + Math.floor(difficulty * 6) + Math.floor(Math.random() * 2);
-        const baseY = 440 - Math.floor(difficulty * 40);
-        const minGap = 50 + Math.floor(difficulty * 40);
-        const maxGap = 90 + Math.floor(difficulty * 60);
+        const t = i / count;
+        const difficulty = t * t;
+        const platCount = 5 + Math.floor(difficulty * 5) + Math.floor(Math.random() * 2);
+        const baseY = 440 - Math.floor(difficulty * 30);
+        let minGap, maxGap;
+        if (difficulty > 0.8) {
+            minGap = 50 + Math.floor(difficulty * 20);
+            maxGap = 80 + Math.floor(difficulty * 30);
+        } else {
+            minGap = 50 + Math.floor(difficulty * 40);
+            maxGap = 90 + Math.floor(difficulty * 60);
+        }
+        if (maxGap > 130) maxGap = 130;
+        if (minGap > 80) minGap = 80;
+
         const platforms = [];
-        const startPlat = { x: 10, y: baseY, w: Math.max(30, 80 - Math.floor(difficulty * 30)), h: 16 };
+        const startPlat = { x: 10, y: baseY, w: Math.max(40, 70 - Math.floor(difficulty * 20)), h: 16 };
         platforms.push(startPlat);
         let cx = startPlat.x + startPlat.w;
         let cy = baseY;
@@ -409,19 +415,19 @@ function generateLevels(count) {
             let w, py, gap;
             if (ladderMode && ladderCount > 0) {
                 const step = 1 - ladderCount / 4;
-                w = Math.max(20, 30 + Math.floor(r() * 20) - Math.floor(difficulty * 8));
-                const yOffset = -Math.floor(25 + step * 35) + Math.floor(r() * 15);
+                w = Math.max(30, 30 + Math.floor(r() * 20) - Math.floor(difficulty * 5));
+                const yOffset = -Math.floor(20 + step * 30) + Math.floor(r() * 15);
                 py = Math.min(445, Math.max(180, cy + yOffset));
                 gap = 20 + Math.floor(r() * 20);
                 ladderCount--;
                 if (ladderCount === 0) ladderMode = false;
             } else {
-                w = Math.max(30, 40 + Math.floor(r() * 30) + Math.floor(difficulty * 10) - Math.floor(difficulty * 30));
-                const yOffset = Math.floor(r() * 50 - 25) - Math.floor(difficulty * 30);
+                w = Math.max(35, 40 + Math.floor(r() * 30) + Math.floor(difficulty * 5) - Math.floor(difficulty * 15));
+                const yOffset = Math.floor(r() * 40 - 20) - Math.floor(difficulty * 20);
                 py = Math.min(445, Math.max(180, cy + yOffset));
                 gap = minGap + Math.floor(r() * (maxGap - minGap));
-                if (difficulty > 0.7 && r() > 0.6) {
-                    gap += 30;
+                if (difficulty > 0.7 && r() > 0.7) {
+                    gap += 10;
                 }
             }
             cx += gap;
@@ -430,10 +436,10 @@ function generateLevels(count) {
             cx += w;
             cy = py;
         }
-        while (platforms.length < 4) {
+        while (platforms.length < 5) {
             const last = platforms[platforms.length - 1];
-            const newX = last.x + last.w + 70 + Math.floor(difficulty * 30);
-            const newY = Math.min(445, Math.max(180, last.y + (Math.random() * 40 - 20) - difficulty * 25));
+            const newX = last.x + last.w + 60 + Math.floor(difficulty * 20);
+            const newY = Math.min(445, Math.max(180, last.y + (Math.random() * 30 - 15) - difficulty * 15));
             platforms.push({ x: newX, y: newY, w: 40 + Math.floor(Math.random() * 20), h: 16 });
         }
 
@@ -446,7 +452,7 @@ function generateLevels(count) {
                 coinPositions.push({ x: coinX, y: coinY, radius: 10, collected: false });
             }
         }
-        const extraCount = Math.floor(platCount * 0.4) + Math.floor(difficulty * 3);
+        const extraCount = Math.floor(platCount * 0.4) + Math.floor(difficulty * 2);
         for (let j = 0; j < extraCount; j++) {
             const idx = Math.floor(r() * platforms.length);
             if (idx === 0) continue;
@@ -459,7 +465,7 @@ function generateLevels(count) {
         const playerX = startPlat.x + 10;
         const playerY = startPlat.y - PLAYER_H;
         const lastPlat = platforms[platforms.length - 1];
-        let doorX = Math.min(lastPlat.x + lastPlat.w + 60 + Math.floor(difficulty * 40), 780);
+        let doorX = Math.min(lastPlat.x + lastPlat.w + 60 + Math.floor(difficulty * 30), 780);
         if (doorX < 700) doorX = 700;
         levels.push({
             platforms: platforms,
@@ -506,6 +512,136 @@ let touchControls, touchLeft, touchRight, touchJump;
 let coinCollectCooldown = false;
 let useMobileLayout = false;
 let isAdmin = false;
+
+// ============================================================
+//  ЛОГОТИП (АНИМАЦИЯ НА ОТДЕЛЬНОМ КАНВАСЕ)
+// ============================================================
+let logoCanvas, logoCtx;
+let logoAnimFrame = 0;
+let logoWalkTime = 0;
+let logoJumpOffset = 0;
+let logoJumpActive = false;
+let logoJumpTimer = 0;
+let logoBlocks = [];
+
+function initLogo() {
+    logoCanvas = document.getElementById('logoCanvas');
+    logoCtx = logoCanvas.getContext('2d');
+    // Инициализируем блоки для логотипа
+    const baseY = 60;
+    for (let i = 0; i < 6; i++) {
+        const x = 20 + i * 50 + Math.random() * 10;
+        const w = 30 + Math.random() * 20;
+        logoBlocks.push({ x, y: baseY - 10 - Math.random() * 20, w, h: 12 });
+    }
+    // Запускаем анимацию логотипа
+    requestAnimationFrame(animateLogo);
+}
+
+function animateLogo() {
+    if (!logoCtx) return;
+    const w = logoCanvas.width, h = logoCanvas.height;
+    logoCtx.clearRect(0, 0, w, h);
+    // Фон
+    logoCtx.fillStyle = '#0a0a1a';
+    logoCtx.fillRect(0, 0, w, h);
+
+    // Двигаем блоки
+    for (let b of logoBlocks) {
+        b.x -= 1.2;
+        if (b.x + b.w < 0) {
+            b.x = w + 20 + Math.random() * 40;
+            b.y = 60 - 10 - Math.random() * 20;
+            b.w = 25 + Math.random() * 20;
+        }
+    }
+    // Рисуем блоки
+    logoCtx.fillStyle = '#6a7a9a';
+    for (let b of logoBlocks) {
+        logoCtx.fillRect(b.x, b.y, b.w, b.h);
+        logoCtx.fillStyle = '#8a9aba';
+        logoCtx.fillRect(b.x+2, b.y-2, b.w-4, 3);
+        logoCtx.fillStyle = '#6a7a9a';
+    }
+
+    // Персонаж (бежит и прыгает)
+    const px = 140, py = 40;
+    const skinColor = SKINS.find(s => s.id === gameData.activeSkin) || SKINS[0];
+    const clothColor = skinColor.color;
+    const headColor = '#f5cba7';
+    const legColor = '#e6b88a';
+
+    // Анимация прыжка
+    logoJumpTimer += 1/60;
+    if (!logoJumpActive && logoJumpTimer > 1.2 + Math.random() * 0.8) {
+        logoJumpActive = true;
+        logoJumpTimer = 0;
+        logoJumpOffset = -25;
+    }
+    if (logoJumpActive) {
+        logoJumpOffset += 0.6;
+        if (logoJumpOffset >= 0) {
+            logoJumpOffset = 0;
+            logoJumpActive = false;
+            logoJumpTimer = 0;
+        }
+    }
+    logoWalkTime += 0.12;
+
+    const pyOffset = logoJumpOffset;
+    const headX = px + 6, headY = py + pyOffset, headW = 12, headH = 10;
+    const bodyX = px + 2, bodyY = py + 10 + pyOffset, bodyW = 20, bodyH = 12;
+    const shortsX = px + 2, shortsY = py + 22 + pyOffset, shortsW = 20, shortsH = 8;
+    const legW = 6, legH = 10;
+    const legYBase = shortsY + shortsH;
+
+    // Голова
+    logoCtx.fillStyle = headColor;
+    logoCtx.fillRect(headX, headY, headW, headH);
+
+    // Кепка
+    logoCtx.fillStyle = clothColor;
+    logoCtx.fillRect(headX - 2, headY - 4, headW + 4, 6);
+    logoCtx.fillRect(headX - 4, headY - 2, 6, 3);
+    logoCtx.fillRect(headX + headW - 2, headY - 2, 6, 3);
+    logoCtx.fillRect(headX + 2, headY - 6, 8, 3);
+
+    // Тело
+    logoCtx.fillStyle = clothColor;
+    logoCtx.fillRect(bodyX, bodyY, bodyW, bodyH);
+    // Шорты (чуть темнее)
+    const darken = (col) => {
+        let r = parseInt(col.substring(1,3),16);
+        let g = parseInt(col.substring(3,5),16);
+        let b = parseInt(col.substring(5,7),16);
+        r = Math.max(0, r - 30);
+        g = Math.max(0, g - 30);
+        b = Math.max(0, b - 30);
+        return `rgb(${r},${g},${b})`;
+    };
+    logoCtx.fillStyle = darken(clothColor);
+    logoCtx.fillRect(shortsX, shortsY, shortsW, shortsH);
+
+    // Ноги
+    const isJumping = logoJumpActive;
+    if (isJumping) {
+        logoCtx.fillStyle = legColor;
+        logoCtx.fillRect(px + 4, legYBase, legW, legH);
+        logoCtx.fillRect(px + 14, legYBase - 6, legW, 6);
+    } else {
+        const phase = Math.sin(logoWalkTime);
+        const leftOffsetX = 4 + phase * 4;
+        const leftOffsetY = (phase > 0) ? -2 : 2;
+        logoCtx.fillStyle = legColor;
+        logoCtx.fillRect(px + leftOffsetX, legYBase + leftOffsetY, legW, legH);
+        const rightOffsetX = 14 - phase * 4;
+        const rightOffsetY = (phase < 0) ? -2 : 2;
+        logoCtx.fillRect(px + rightOffsetX, legYBase + rightOffsetY, legW, legH);
+    }
+
+    // Подпись (уже есть поверх через CSS)
+    requestAnimationFrame(animateLogo);
+}
 
 // ============================================================
 //  АНТИ-ЧИТ (100 млн за 3 сек, админы защищены)
@@ -1533,6 +1669,9 @@ window.onload = function() {
     touchJump = document.getElementById('touchJump');
 
     touchControls.classList.remove('active');
+
+    // Инициализация логотипа
+    initLogo();
 
     const hasDeviceMode = loadDeviceMode();
     setupTouchControls();
